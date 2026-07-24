@@ -51,8 +51,8 @@ function LandingPage() {
             </>
           );
           const cardStyle: React.CSSProperties = {
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.18)",
             opacity: disponivel ? 1 : 0.5,
           };
           if (disponivel) {
