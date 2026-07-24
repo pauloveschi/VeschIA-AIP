@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { PRODUTOS } from "@/lib/empresa";
 import { FileText, Users, Coins, ShoppingCart, Scale, Target } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -19,13 +20,14 @@ function LandingPage() {
   return (
     <div className="veschia-shell px-6 py-16">
       <div className="max-w-3xl mx-auto text-center">
-        <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: "var(--vs-cyan)" }}>VeschIA</p>
+        <img src={logo} alt="VeschIA" className="h-14 mx-auto mb-6 drop-shadow-[0_0_24px_rgba(44,167,201,0.35)]" />
         <h1 className="text-3xl md:text-4xl font-semibold mt-2">Automação Inteligente de Processos</h1>
         <p className="mt-4 text-sm md:text-base max-w-xl mx-auto" style={{ color: "var(--vs-text-muted)" }}>
           Seis soluções, um só motor: fluxo de aprovação configurável, prazo e indicador
           automáticos, e IA analisando documento em cada etapa.
         </p>
       </div>
+
 
       <div className="max-w-4xl mx-auto mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {PRODUTOS.map((p) => {
