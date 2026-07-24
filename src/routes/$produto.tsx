@@ -28,6 +28,15 @@ function FluxoExemplo({
   areas: string;
   etapas: string[];
 }) {
+  const [ativo, setAtivo] = React.useState(0);
+
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      setAtivo((prev) => (prev + 1) % etapas.length);
+    }, 1100);
+    return () => clearInterval(id);
+  }, [etapas.length]);
+
   return (
     <div className="rounded-xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <p className="text-[10px] uppercase tracking-[0.16em] font-semibold" style={{ color: "var(--vs-cyan)" }}>{rotulo}</p>
@@ -35,23 +44,38 @@ function FluxoExemplo({
       <div className="flex items-center overflow-x-auto no-scrollbar">
         {etapas.map((nome, i) => {
           const isLast = i === etapas.length - 1;
+          const isPast = i < ativo;
+          const isCurrent = i === ativo;
+          const lineFilled = i < ativo;
           return (
             <React.Fragment key={nome}>
               <div className="flex flex-col items-center gap-1.5 shrink-0" style={{ minWidth: 56 }}>
                 <div
-                  className="size-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+                  className="size-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 transition-all duration-500"
                   style={{
-                    background: isLast ? "#15803D" : "rgba(255,255,255,0.08)",
-                    color: isLast ? "#fff" : "var(--vs-text-muted)",
+                    background: isPast || (isLast && isCurrent) ? "#15803D" : isCurrent ? "var(--vs-cyan)" : "rgba(255,255,255,0.08)",
+                    color: isPast || isCurrent ? "#fff" : "var(--vs-text-muted)",
+                    boxShadow: isCurrent ? "0 0 0 4px rgba(44,167,201,0.25)" : "none",
+                    transform: isCurrent ? "scale(1.1)" : "scale(1)",
                   }}
                 >
-                  {isLast ? <Check className="size-3.5" /> : i + 1}
+                  {isPast || (isLast && isCurrent) ? <Check className="size-3.5" /> : i + 1}
                 </div>
-                <span className="text-[10px] text-center leading-tight" style={{ color: isLast ? undefined : "var(--vs-text-muted)" }}>
+                <span
+                  className="text-[10px] text-center leading-tight transition-colors duration-500"
+                  style={{ color: isCurrent ? "#fff" : isPast ? undefined : "var(--vs-text-muted)" }}
+                >
                   {nome}
                 </span>
               </div>
-              {!isLast && <div className="h-px w-4 shrink-0 mx-0.5 mb-5" style={{ background: "rgba(255,255,255,0.15)" }} />}
+              {!isLast && (
+                <div className="h-px w-4 shrink-0 mx-0.5 mb-5 relative overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <div
+                    className="absolute inset-y-0 left-0 transition-all duration-500"
+                    style={{ width: lineFilled ? "100%" : "0%", background: "#15803D" }}
+                  />
+                </div>
+              )}
             </React.Fragment>
           );
         })}
