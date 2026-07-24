@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoRouteImport } from './routes/$produto'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SuperadminRouteImport } from './routes/superadmin'
 import { Route as ProdutoEmpresaRouteImport } from './routes/$produto.$empresa'
 import { Route as ProdutoEmpresaIndexRouteImport } from './routes/$produto.$empresa.index'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 const ProdutoRoute = ProdutoRouteImport.update({
   id: '/$produto',
   path: '/$produto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SuperadminRoute = SuperadminRouteImport.update({
@@ -77,6 +83,7 @@ const ProdutoEmpresaSolicitacoesIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$produto': typeof ProdutoRouteWithChildren
+  '/auth': typeof AuthRoute
   '/superadmin': typeof SuperadminRoute
   '/$produto/$empresa': typeof ProdutoEmpresaRouteWithChildren
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$produto': typeof ProdutoRouteWithChildren
+  '/auth': typeof AuthRoute
   '/superadmin': typeof SuperadminRoute
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$produto': typeof ProdutoRouteWithChildren
+  '/auth': typeof AuthRoute
   '/superadmin': typeof SuperadminRoute
   '/$produto/$empresa': typeof ProdutoEmpresaRouteWithChildren
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$produto'
+    | '/auth'
     | '/superadmin'
     | '/$produto/$empresa'
     | '/$produto/$empresa/auth'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$produto'
+    | '/auth'
     | '/superadmin'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$produto'
+    | '/auth'
     | '/superadmin'
     | '/$produto/$empresa'
     | '/$produto/$empresa/auth'
@@ -151,6 +163,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProdutoRoute: typeof ProdutoRouteWithChildren
+  AuthRoute: typeof AuthRoute
   SuperadminRoute: typeof SuperadminRoute
 }
 
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/$produto'
       fullPath: '/$produto'
       preLoaderRoute: typeof ProdutoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/superadmin': {
@@ -277,6 +297,7 @@ const ProdutoRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProdutoRoute: ProdutoRouteWithChildren,
+  AuthRoute: AuthRoute,
   SuperadminRoute: SuperadminRoute,
 }
 export const routeTree = rootRouteImport

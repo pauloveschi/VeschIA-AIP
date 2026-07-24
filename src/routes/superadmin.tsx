@@ -199,7 +199,20 @@ function SuperAdminPage() {
   }
 
   if (!user) {
-    return <div className="min-h-svh grid place-items-center px-4 text-center"><p className="text-sm text-muted-foreground">Faça login com sua conta VeschIA.</p></div>;
+    return (
+      <div className="min-h-svh grid place-items-center px-4 text-center">
+        <div>
+          <p className="text-sm text-muted-foreground mb-4">Faça login com sua conta VeschIA.</p>
+          <Link
+            to="/auth"
+            search={{ redirect: "/superadmin", mode: "signin" }}
+            className="inline-flex h-11 px-6 rounded-full bg-primary text-primary-foreground items-center text-sm"
+          >
+            Entrar
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (!isSuperAdmin) {
