@@ -18,36 +18,45 @@ export type Database = {
           condicao: Json | null
           empresa_id: string
           id: string
+          integracao: string | null
           nome_etapa: string
           obrigatoria: boolean
           ordem: number
           papel_id: string | null
           produto: string
+          regra_saida: Json | null
           responsavel_tipo: string
+          sla_horas: number | null
         }
         Insert: {
           ativo?: boolean
           condicao?: Json | null
           empresa_id: string
           id?: string
+          integracao?: string | null
           nome_etapa: string
           obrigatoria?: boolean
           ordem: number
           papel_id?: string | null
           produto: string
+          regra_saida?: Json | null
           responsavel_tipo: string
+          sla_horas?: number | null
         }
         Update: {
           ativo?: boolean
           condicao?: Json | null
           empresa_id?: string
           id?: string
+          integracao?: string | null
           nome_etapa?: string
           obrigatoria?: boolean
           ordem?: number
           papel_id?: string | null
           produto?: string
+          regra_saida?: Json | null
           responsavel_tipo?: string
+          sla_horas?: number | null
         }
         Relationships: [
           {
@@ -195,7 +204,9 @@ export type Database = {
           cnpj: string | null
           created_at: string | null
           id: string
+          modelo_negocio: string | null
           nome: string
+          segmento_setorial: string | null
           slug: string
           status: string
           updated_at: string | null
@@ -204,7 +215,9 @@ export type Database = {
           cnpj?: string | null
           created_at?: string | null
           id?: string
+          modelo_negocio?: string | null
           nome: string
+          segmento_setorial?: string | null
           slug: string
           status?: string
           updated_at?: string | null
@@ -213,7 +226,9 @@ export type Database = {
           cnpj?: string | null
           created_at?: string | null
           id?: string
+          modelo_negocio?: string | null
           nome?: string
+          segmento_setorial?: string | null
           slug?: string
           status?: string
           updated_at?: string | null
@@ -228,6 +243,7 @@ export type Database = {
           decidido_em: string | null
           decidido_por: string | null
           id: string
+          papel_resolvido_id: string | null
           solicitacao_id: string
           status: string
         }
@@ -238,6 +254,7 @@ export type Database = {
           decidido_em?: string | null
           decidido_por?: string | null
           id?: string
+          papel_resolvido_id?: string | null
           solicitacao_id: string
           status?: string
         }
@@ -248,6 +265,7 @@ export type Database = {
           decidido_em?: string | null
           decidido_por?: string | null
           id?: string
+          papel_resolvido_id?: string | null
           solicitacao_id?: string
           status?: string
         }
@@ -257,6 +275,13 @@ export type Database = {
             columns: ["configuracao_fluxo_id"]
             isOneToOne: false
             referencedRelation: "configuracao_fluxo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "etapas_execucao_papel_resolvido_id_fkey"
+            columns: ["papel_resolvido_id"]
+            isOneToOne: false
+            referencedRelation: "papeis_empresa"
             referencedColumns: ["id"]
           },
           {
@@ -505,8 +530,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      aplicar_modelo_fases_padrao: {
-        Args: { p_empresa_id: string; p_produto: string }
+      aplicar_modelo_empresarial_padrao: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
+      aplicar_modelo_setorial_profissional: {
+        Args: { p_empresa_id: string; p_segmento: string }
         Returns: undefined
       }
       has_empresa_role: {

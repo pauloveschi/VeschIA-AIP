@@ -81,13 +81,22 @@ function useFasesConfig(empresaId: string, produto: string) {
 function FasesSection({ empresaId, produto }: { empresaId: string; produto: string }) {
   const qc = useQueryClient();
   const { data: fases = [], isLoading } = useFasesConfig(empresaId, produto);
+  const [novaFase, setNovaFase] = React.useState("");
 
-  const aplicarModeloMut = useMutation({
+  const criarFaseMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("aplicar_modelo_fases_padrao", { p_empresa_id: empresaId, p_produto: produto });
+      const { error } = await supabase.from("fases_config").insert({
+        empresa_id: empresaId,
+        produto,
+        ordem: (fases.at(-1)?.ordem ?? 0) + 1,
+        nome_fase: novaFase,
+      });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fases-config", empresaId, produto] }),
+    onSuccess: () => {
+      setNovaFase("");
+      qc.invalidateQueries({ queryKey: ["fases-config", empresaId, produto] });
+    },
   });
 
   const toggleAtivoMut = useMutation({
@@ -100,25 +109,17 @@ function FasesSection({ empresaId, produto }: { empresaId: string; produto: stri
 
   return (
     <section>
-      <h2 className="text-sm font-semibold mb-2">Fases do processo (opcional)</h2>
+      <h2 className="text-sm font-semibold mb-2">Fases do contrato (opcional)</h2>
       <p className="text-xs text-muted-foreground mb-3">
-        Ative isso só se quiser agrupar várias solicitações dentro de um contrato, acompanhando
-        a fase atual dele (planejamento, contratação, mobilização, execução, encerramento).
-        Sem isso, cada solicitação funciona isolada normalmente.
+        Use isso só se quiser agrupar várias solicitações dentro de um contrato, acompanhando
+        a fase atual dele na aba Contratos. Sem isso, cada solicitação funciona isolada
+        normalmente. O modelo de negócio (Setorial Profissional/Empresarial Padrão) já foi
+        definido na criação da empresa e controla as etapas de aprovação, não as fases aqui.
       </p>
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando…</p>
-      ) : fases.length === 0 ? (
-        <Button
-          onClick={() => aplicarModeloMut.mutate()}
-          disabled={aplicarModeloMut.isPending}
-          variant="outline"
-          className="h-9"
-        >
-          Ativar fases do processo
-        </Button>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mb-3">
           {fases.map((f) => (
             <div key={f.id} className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !f.ativo && "opacity-50")}>
               <span className="text-xs text-muted-foreground w-5">{f.ordem}</span>
@@ -128,7 +129,13 @@ function FasesSection({ empresaId, produto }: { empresaId: string; produto: stri
           ))}
         </div>
       )}
-      {aplicarModeloMut.isError && <p className="text-xs text-destructive mt-2">{(aplicarModeloMut.error as Error).message}</p>}
+      <div className="flex gap-2">
+        <Input placeholder="Nome da fase (ex: Planejamento)" value={novaFase} onChange={(e) => setNovaFase(e.target.value)} className="h-9 max-w-xs" />
+        <Button size="sm" disabled={!novaFase || criarFaseMut.isPending} onClick={() => criarFaseMut.mutate()} variant="outline">
+          <Plus className="size-4 mr-1" /> Adicionar fase
+        </Button>
+      </div>
+      {criarFaseMut.isError && <p className="text-xs text-destructive mt-2">{(criarFaseMut.error as Error).message}</p>}
     </section>
   );
 }

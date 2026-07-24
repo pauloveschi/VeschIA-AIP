@@ -62,12 +62,24 @@ function useEmpresas() {
   });
 }
 
+const SEGMENTOS = [
+  { slug: "industrial", nome: "Industrial" },
+  { slug: "imobiliario", nome: "Imobiliário" },
+  { slug: "prestacao_servicos", nome: "Prestação de Serviços" },
+  { slug: "engenharia", nome: "Engenharia" },
+  { slug: "saude", nome: "Saúde" },
+  { slug: "energia", nome: "Energia" },
+  { slug: "agronegocio", nome: "Agronegócio" },
+] as const;
+
 function NovaEmpresaForm() {
   const qc = useQueryClient();
   const [nome, setNome] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [produto, setProduto] = React.useState<string>(PRODUTOS[0].slug);
   const [emailDono, setEmailDono] = React.useState("");
+  const [modeloNegocio, setModeloNegocio] = React.useState<"setorial_profissional" | "empresarial_padrao">("empresarial_padrao");
+  const [segmento, setSegmento] = React.useState<string>(SEGMENTOS[0].slug);
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -80,6 +92,22 @@ function NovaEmpresaForm() {
 
       const { error: prodErr } = await supabase.from("empresa_produtos").insert({ empresa_id: empresa.id, produto });
       if (prodErr) throw prodErr;
+
+      // Só o AIProCont tem os templates de fluxo prontos até agora
+      if (produto === "aiprocont") {
+        if (modeloNegocio === "setorial_profissional") {
+          const { error: rpcErr } = await supabase.rpc("aplicar_modelo_setorial_profissional", {
+            p_empresa_id: empresa.id,
+            p_segmento: segmento,
+          });
+          if (rpcErr) throw rpcErr;
+        } else {
+          const { error: rpcErr } = await supabase.rpc("aplicar_modelo_empresarial_padrao", {
+            p_empresa_id: empresa.id,
+          });
+          if (rpcErr) throw rpcErr;
+        }
+      }
 
       if (emailDono) {
         const { data: existingUser } = await supabase.from("profiles").select("id").eq("email", emailDono).maybeSingle();
@@ -123,6 +151,35 @@ function NovaEmpresaForm() {
           <Label className="text-[11px] uppercase tracking-wider">E-mail do dono (opcional, precisa já ter conta)</Label>
           <Input type="email" value={emailDono} onChange={(e) => setEmailDono(e.target.value)} />
         </div>
+        {produto === "aiprocont" && (
+          <>
+            <div className="space-y-1">
+              <Label className="text-[11px] uppercase tracking-wider">Modelo de negócio</Label>
+              <select
+                value={modeloNegocio}
+                onChange={(e) => setModeloNegocio(e.target.value as typeof modeloNegocio)}
+                className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm"
+              >
+                <option value="empresarial_padrao">Empresarial Padrão (fluxo enxuto)</option>
+                <option value="setorial_profissional">Setorial Profissional (fluxo especializado)</option>
+              </select>
+            </div>
+            {modeloNegocio === "setorial_profissional" && (
+              <div className="space-y-1">
+                <Label className="text-[11px] uppercase tracking-wider">Segmento</Label>
+                <select
+                  value={segmento}
+                  onChange={(e) => setSegmento(e.target.value)}
+                  className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm"
+                >
+                  {SEGMENTOS.map((s) => (
+                    <option key={s.slug} value={s.slug}>{s.nome}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        )}
       </div>
       {createMut.isError && <p className="text-xs text-destructive">{(createMut.error as Error).message}</p>}
       <Button disabled={!nome || !slug || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
