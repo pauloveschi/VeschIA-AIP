@@ -1,0 +1,240 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  /* VeschIA AIP — identidade moderna, tech, navy + ciano (extraída da logo) */
+  --background: oklch(0.97 0.006 250);          /* #F5F7FA cinza-azulado claro */
+  --foreground: oklch(0.19 0.03 255);           /* #0F172A navy quase preto */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.03 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.03 255);
+  --primary: oklch(0.26 0.05 250);              /* #0A2540 navy escuro */
+  --primary-foreground: oklch(0.98 0.005 240);
+  --primary-deep: oklch(0.14 0.03 255);         /* #050E1F navy quase preto */
+  --secondary: oklch(0.95 0.008 250);
+  --secondary-foreground: oklch(0.26 0.05 250);
+  --muted: oklch(0.95 0.008 250);
+  --muted-foreground: oklch(0.52 0.03 250);
+  --accent: oklch(0.62 0.10 215);               /* #2CA7C9 ciano */
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.55 0.20 27);
+  --destructive-foreground: oklch(0.98 0.005 240);
+  --border: oklch(0.90 0.008 250);
+  --input: oklch(0.90 0.008 250);
+  --ring: oklch(0.62 0.10 215);
+  --chart-1: oklch(0.62 0.10 215);
+  --chart-2: oklch(0.65 0.09 290);
+  --chart-3: oklch(0.70 0.15 45);
+  --chart-4: oklch(0.65 0.18 140);
+  --chart-5: oklch(0.60 0.20 25);
+  --sidebar: oklch(0.14 0.03 255);
+  --sidebar-foreground: oklch(0.85 0.02 245);
+  --sidebar-primary: oklch(0.62 0.10 215);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.20 0.04 255);
+  --sidebar-accent-foreground: oklch(0.98 0.005 240);
+  --sidebar-border: oklch(0.22 0.04 255);
+  --sidebar-ring: oklch(0.62 0.10 215);
+
+  --font-display: "Inter", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --shadow-elegant: 0 10px 30px -12px color-mix(in oklab, oklch(0.14 0.03 255) 18%, transparent);
+  --shadow-soft: 0 4px 16px -4px color-mix(in oklab, oklch(0.14 0.03 255) 10%, transparent);
+  --gradient-primary: linear-gradient(135deg, oklch(0.26 0.05 250), oklch(0.14 0.03 255));
+  --gradient-accent: linear-gradient(135deg, oklch(0.68 0.11 215), oklch(0.55 0.09 215));
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+
+  /* ============================================================
+     Painéis internos do VeschIA (Admin/Produção), identidade
+     fixa do produto, igual em toda pizzaria (não usa a cor da marca
+     do cliente, que fica reservada pro site público do consumidor).
+     ============================================================ */
+  :root {
+    --ops-bg: #F4F5F6;
+    --ops-surface: #FFFFFF;
+    --ops-header: #1E242B;
+    --ops-header-hover: #2A3038;
+    --ops-header-text: #C7CDD3;
+    --ops-border: #E2E5E8;
+    --ops-text: #1B1F23;
+    --ops-text-muted: #6B7280;
+    --ops-accent: #2CA7C9;
+    --ops-accent-ink: #0E5266;
+    --ops-accent-soft: #D7EFF5;
+
+    --ops-aberta: #0369A1;
+    --ops-aberta-bg: #DBEAFE;
+    --ops-em-analise: #B45309;
+    --ops-em-analise-bg: #FEF3C7;
+    --ops-aprovada: #15803D;
+    --ops-aprovada-bg: #DCFCE7;
+    --ops-rejeitada: #B91C1C;
+    --ops-rejeitada-bg: #FEE2E2;
+    --ops-assinada: #6D28D9;
+    --ops-assinada-bg: #EDE9FE;
+    --ops-encerrada: #4B5563;
+    --ops-encerrada-bg: #F1F2F4;
+    --ops-cancelada: #B91C1C;
+    --ops-cancelada-bg: #FEE2E2;
+  }
+
+  .ops-shell {
+    background: var(--ops-bg);
+    color: var(--ops-text);
+    min-height: 100svh;
+    font-family: var(--font-body);
+  }
+  .ops-shell h1, .ops-shell h2, .ops-shell h3, .ops-shell h4 {
+    font-family: var(--font-body);
+    letter-spacing: -0.01em;
+  }
+  .ops-card { background: var(--ops-surface); border-color: var(--ops-border) !important; }
+  .ops-border { border-color: var(--ops-border) !important; }
+  .ops-muted { color: var(--ops-text-muted) !important; }
+  .ops-btn-primary { background: var(--ops-accent) !important; color: #fff !important; }
+  .ops-btn-primary:hover { background: var(--ops-accent-ink) !important; }
+  .ops-pill-active { background: var(--ops-accent) !important; color: #fff !important; border-color: var(--ops-accent) !important; }
+  .ops-pill { background: var(--ops-surface); color: var(--ops-text-muted); border-color: var(--ops-border) !important; }
+
+  /* ============================================================
+     Identidade da própria marca VeschIA, só pra páginas da
+     plataforma (landing "/" e "/superadmin"), nunca pro site do
+     cliente final (que usa a cor de cada parceiro).
+     ============================================================ */
+  :root {
+    --vs-bg-1: #050E1F;
+    --vs-bg-2: #0A2540;
+    --vs-cyan: #2CA7C9;
+    --vs-cyan-bright: #4FD8F0;
+    --vs-purple: #B9B1EF;
+    --vs-text: #E8F1F7;
+    --vs-text-muted: #9FB3C4;
+  }
+  .veschia-shell {
+    min-height: 100svh;
+    background: radial-gradient(ellipse at top, var(--vs-bg-2) 0%, var(--vs-bg-1) 65%);
+    color: var(--vs-text);
+    font-family: var(--font-body);
+  }
+  .veschia-shell h1, .veschia-shell h2, .veschia-shell h3 {
+    font-family: var(--font-body);
+    letter-spacing: -0.01em;
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
