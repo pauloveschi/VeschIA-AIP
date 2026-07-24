@@ -16,6 +16,8 @@ import { Route as ProdutoEmpresaRouteImport } from './routes/$produto.$empresa'
 import { Route as ProdutoEmpresaIndexRouteImport } from './routes/$produto.$empresa.index'
 import { Route as ProdutoEmpresaAuthRouteImport } from './routes/$produto.$empresa.auth'
 import { Route as ProdutoEmpresaConfiguracaoRouteImport } from './routes/$produto.$empresa.configuracao'
+import { Route as ProdutoEmpresaContratosRouteImport } from './routes/$produto.$empresa.contratos'
+import { Route as ProdutoEmpresaContratosIdRouteImport } from './routes/$produto.$empresa.contratos.$id'
 import { Route as ProdutoEmpresaSolicitacoesIdRouteImport } from './routes/$produto.$empresa.solicitacoes.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -54,6 +56,17 @@ const ProdutoEmpresaConfiguracaoRoute =
     path: '/configuracao',
     getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
+const ProdutoEmpresaContratosRoute = ProdutoEmpresaContratosRouteImport.update({
+  id: '/contratos',
+  path: '/contratos',
+  getParentRoute: () => ProdutoEmpresaRoute,
+} as any)
+const ProdutoEmpresaContratosIdRoute =
+  ProdutoEmpresaContratosIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ProdutoEmpresaContratosRoute,
+  } as any)
 const ProdutoEmpresaSolicitacoesIdRoute =
   ProdutoEmpresaSolicitacoesIdRouteImport.update({
     id: '/solicitacoes/$id',
@@ -68,7 +81,9 @@ export interface FileRoutesByFullPath {
   '/$produto/$empresa': typeof ProdutoEmpresaRouteWithChildren
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
+  '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa/': typeof ProdutoEmpresaIndexRoute
+  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
   '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 export interface FileRoutesByTo {
@@ -77,7 +92,9 @@ export interface FileRoutesByTo {
   '/superadmin': typeof SuperadminRoute
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
+  '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa': typeof ProdutoEmpresaIndexRoute
+  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
   '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 export interface FileRoutesById {
@@ -88,7 +105,9 @@ export interface FileRoutesById {
   '/$produto/$empresa': typeof ProdutoEmpresaRouteWithChildren
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
+  '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa/': typeof ProdutoEmpresaIndexRoute
+  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
   '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 export interface FileRouteTypes {
@@ -100,7 +119,9 @@ export interface FileRouteTypes {
     | '/$produto/$empresa'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
+    | '/$produto/$empresa/contratos'
     | '/$produto/$empresa/'
+    | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -109,7 +130,9 @@ export interface FileRouteTypes {
     | '/superadmin'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
+    | '/$produto/$empresa/contratos'
     | '/$produto/$empresa'
+    | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
   id:
     | '__root__'
@@ -119,7 +142,9 @@ export interface FileRouteTypes {
     | '/$produto/$empresa'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
+    | '/$produto/$empresa/contratos'
     | '/$produto/$empresa/'
+    | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
   fileRoutesById: FileRoutesById
 }
@@ -180,6 +205,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoEmpresaConfiguracaoRouteImport
       parentRoute: typeof ProdutoEmpresaRoute
     }
+    '/$produto/$empresa/contratos': {
+      id: '/$produto/$empresa/contratos'
+      path: '/contratos'
+      fullPath: '/$produto/$empresa/contratos'
+      preLoaderRoute: typeof ProdutoEmpresaContratosRouteImport
+      parentRoute: typeof ProdutoEmpresaRoute
+    }
+    '/$produto/$empresa/contratos/$id': {
+      id: '/$produto/$empresa/contratos/$id'
+      path: '/$id'
+      fullPath: '/$produto/$empresa/contratos/$id'
+      preLoaderRoute: typeof ProdutoEmpresaContratosIdRouteImport
+      parentRoute: typeof ProdutoEmpresaContratosRoute
+    }
     '/$produto/$empresa/solicitacoes/$id': {
       id: '/$produto/$empresa/solicitacoes/$id'
       path: '/solicitacoes/$id'
@@ -190,9 +229,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ProdutoEmpresaContratosRouteChildren {
+  ProdutoEmpresaContratosIdRoute: typeof ProdutoEmpresaContratosIdRoute
+}
+
+const ProdutoEmpresaContratosRouteChildren: ProdutoEmpresaContratosRouteChildren =
+  {
+    ProdutoEmpresaContratosIdRoute: ProdutoEmpresaContratosIdRoute,
+  }
+
+const ProdutoEmpresaContratosRouteWithChildren =
+  ProdutoEmpresaContratosRoute._addFileChildren(
+    ProdutoEmpresaContratosRouteChildren,
+  )
+
 interface ProdutoEmpresaRouteChildren {
   ProdutoEmpresaAuthRoute: typeof ProdutoEmpresaAuthRoute
   ProdutoEmpresaConfiguracaoRoute: typeof ProdutoEmpresaConfiguracaoRoute
+  ProdutoEmpresaContratosRoute: typeof ProdutoEmpresaContratosRouteWithChildren
   ProdutoEmpresaIndexRoute: typeof ProdutoEmpresaIndexRoute
   ProdutoEmpresaSolicitacoesIdRoute: typeof ProdutoEmpresaSolicitacoesIdRoute
 }
@@ -200,6 +254,7 @@ interface ProdutoEmpresaRouteChildren {
 const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
   ProdutoEmpresaAuthRoute: ProdutoEmpresaAuthRoute,
   ProdutoEmpresaConfiguracaoRoute: ProdutoEmpresaConfiguracaoRoute,
+  ProdutoEmpresaContratosRoute: ProdutoEmpresaContratosRouteWithChildren,
   ProdutoEmpresaIndexRoute: ProdutoEmpresaIndexRoute,
   ProdutoEmpresaSolicitacoesIdRoute: ProdutoEmpresaSolicitacoesIdRoute,
 }

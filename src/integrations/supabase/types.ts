@@ -66,6 +66,60 @@ export type Database = {
           },
         ]
       }
+      contratos: {
+        Row: {
+          created_at: string | null
+          empresa_id: string
+          fase_atual_id: string | null
+          fornecedor_nome: string | null
+          id: string
+          numero: number
+          status: string
+          titulo: string
+          updated_at: string | null
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          empresa_id: string
+          fase_atual_id?: string | null
+          fornecedor_nome?: string | null
+          id?: string
+          numero?: number
+          status?: string
+          titulo: string
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          empresa_id?: string
+          fase_atual_id?: string | null
+          fornecedor_nome?: string | null
+          id?: string
+          numero?: number
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fase_atual_fkey"
+            columns: ["fase_atual_id"]
+            isOneToOne: false
+            referencedRelation: "fases_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos: {
         Row: {
           analise_ia: Json | null
@@ -214,6 +268,41 @@ export type Database = {
           },
         ]
       }
+      fases_config: {
+        Row: {
+          ativo: boolean
+          empresa_id: string
+          id: string
+          nome_fase: string
+          ordem: number
+          produto: string
+        }
+        Insert: {
+          ativo?: boolean
+          empresa_id: string
+          id?: string
+          nome_fase: string
+          ordem: number
+          produto: string
+        }
+        Update: {
+          ativo?: boolean
+          empresa_id?: string
+          id?: string
+          nome_fase?: string
+          ordem?: number
+          produto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fases_config_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historico_status: {
         Row: {
           changed_at: string | null
@@ -340,9 +429,11 @@ export type Database = {
       }
       solicitacoes: {
         Row: {
+          contrato_id: string | null
           created_at: string | null
           data_vencimento: string | null
           empresa_id: string
+          fase_id: string | null
           fornecedor_nome: string | null
           id: string
           numero: number
@@ -354,9 +445,11 @@ export type Database = {
           valor: number | null
         }
         Insert: {
+          contrato_id?: string | null
           created_at?: string | null
           data_vencimento?: string | null
           empresa_id: string
+          fase_id?: string | null
           fornecedor_nome?: string | null
           id?: string
           numero?: number
@@ -368,9 +461,11 @@ export type Database = {
           valor?: number | null
         }
         Update: {
+          contrato_id?: string | null
           created_at?: string | null
           data_vencimento?: string | null
           empresa_id?: string
+          fase_id?: string | null
           fornecedor_nome?: string | null
           id?: string
           numero?: number
@@ -383,10 +478,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "solicitacoes_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "solicitacoes_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_fase_id_fkey"
+            columns: ["fase_id"]
+            isOneToOne: false
+            referencedRelation: "fases_config"
             referencedColumns: ["id"]
           },
         ]
@@ -396,6 +505,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aplicar_modelo_fases_padrao: {
+        Args: { p_empresa_id: string; p_produto: string }
+        Returns: undefined
+      }
       has_empresa_role: {
         Args: { p_empresa_id: string; roles: string[] }
         Returns: boolean

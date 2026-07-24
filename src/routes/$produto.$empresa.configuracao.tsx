@@ -55,6 +55,84 @@ function useEtapasConfig(empresaId: string, produto: string) {
   });
 }
 
+interface FaseConfig {
+  id: string;
+  ordem: number;
+  nome_fase: string;
+  ativo: boolean;
+}
+
+function useFasesConfig(empresaId: string, produto: string) {
+  return useQuery({
+    queryKey: ["fases-config", empresaId, produto],
+    queryFn: async (): Promise<FaseConfig[]> => {
+      const { data, error } = await supabase
+        .from("fases_config")
+        .select("id, ordem, nome_fase, ativo")
+        .eq("empresa_id", empresaId)
+        .eq("produto", produto)
+        .order("ordem");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+function FasesSection({ empresaId, produto }: { empresaId: string; produto: string }) {
+  const qc = useQueryClient();
+  const { data: fases = [], isLoading } = useFasesConfig(empresaId, produto);
+
+  const aplicarModeloMut = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("aplicar_modelo_fases_padrao", { p_empresa_id: empresaId, p_produto: produto });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fases-config", empresaId, produto] }),
+  });
+
+  const toggleAtivoMut = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase.from("fases_config").update({ ativo }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fases-config", empresaId, produto] }),
+  });
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold mb-2">Fases do processo (opcional)</h2>
+      <p className="text-xs text-muted-foreground mb-3">
+        Ative isso só se quiser agrupar várias solicitações dentro de um contrato, acompanhando
+        a fase atual dele (planejamento, contratação, mobilização, execução, encerramento).
+        Sem isso, cada solicitação funciona isolada normalmente.
+      </p>
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Carregando…</p>
+      ) : fases.length === 0 ? (
+        <Button
+          onClick={() => aplicarModeloMut.mutate()}
+          disabled={aplicarModeloMut.isPending}
+          variant="outline"
+          className="h-9"
+        >
+          Ativar fases do processo
+        </Button>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {fases.map((f) => (
+            <div key={f.id} className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !f.ativo && "opacity-50")}>
+              <span className="text-xs text-muted-foreground w-5">{f.ordem}</span>
+              <span className="flex-1 text-sm">{f.nome_fase}</span>
+              <Switch checked={f.ativo} onCheckedChange={(v) => toggleAtivoMut.mutate({ id: f.id, ativo: v })} />
+            </div>
+          ))}
+        </div>
+      )}
+      {aplicarModeloMut.isError && <p className="text-xs text-destructive mt-2">{(aplicarModeloMut.error as Error).message}</p>}
+    </section>
+  );
+}
+
 function NovoPapelForm({ empresaId }: { empresaId: string }) {
   const qc = useQueryClient();
   const [nome, setNome] = React.useState("");
@@ -231,6 +309,8 @@ function ConfiguracaoPage() {
           )}
           <NovaEtapaForm empresaId={empresa.id} produto={produto} papeis={papeis} proximaOrdem={(etapas.at(-1)?.ordem ?? 0) + 1} />
         </section>
+
+        <FasesSection empresaId={empresa.id} produto={produto} />
       </main>
     </div>
   );

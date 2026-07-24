@@ -7,7 +7,7 @@ import { useEmpresa, useProdutoAtual, useProdutoContratado, useIsEmpresaStaff, p
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { LogOut, Settings2, Plus, FileText } from "lucide-react";
+import { LogOut, Settings2, Plus, FileText, FileStack } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/")({
   component: DashboardPage,
@@ -173,6 +173,13 @@ function DashboardPage() {
             <h1 className="text-[19px] font-semibold leading-tight text-primary-foreground">Solicitações</h1>
           </div>
           <div className="flex items-center gap-4">
+            <Link
+              to="/$produto/$empresa/contratos"
+              params={{ produto, empresa: empresa.slug }}
+              className="text-[13px] flex items-center gap-1.5 text-primary-foreground/70 hover:text-primary-foreground"
+            >
+              <FileStack className="size-3.5" /> Contratos
+            </Link>
             {isStaff && (
               <Link
                 to="/$produto/$empresa/configuracao"
