@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { isProdutoValido, produtoInfo } from "@/lib/empresa";
-import { GitBranch, Sparkles, Bell, ArrowLeft, Check, Clock } from "lucide-react";
+import { GitBranch, Sparkles, Bell, ArrowLeft, Check } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/$produto")({
@@ -19,44 +19,60 @@ const FEATURES = [
 
 const WHATSAPP_VENDAS = "5531981023577";
 
-function PreviewFluxo() {
-  const etapas = [
-    { nome: "Gestor", status: "done" },
-    { nome: "SSMA", status: "current" },
-    { nome: "Jurídico", status: "pending" },
-    { nome: "Assinatura", status: "pending" },
-  ];
+function FluxoExemplo({
+  rotulo,
+  areas,
+  etapas,
+}: {
+  rotulo: string;
+  areas: string;
+  etapas: string[];
+}) {
   return (
     <div className="rounded-xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-      <p className="text-[11px] uppercase tracking-wide mb-4" style={{ color: "var(--vs-text-muted)" }}>
-        Solicitação #142 · Manutenção predial
-      </p>
-      <div className="flex items-center">
-        {etapas.map((e, i) => (
-          <React.Fragment key={e.nome}>
-            <div className="flex flex-col items-center gap-1.5">
-              <div
-                className="size-8 rounded-full flex items-center justify-center"
-                style={{
-                  background: e.status === "done" ? "#15803D" : e.status === "current" ? "var(--vs-cyan)" : "rgba(255,255,255,0.06)",
-                }}
-              >
-                {e.status === "done" ? (
-                  <Check className="size-4 text-white" />
-                ) : e.status === "current" ? (
-                  <Clock className="size-4" style={{ color: "#04202B" }} />
-                ) : (
-                  <Clock className="size-4" style={{ color: "var(--vs-text-muted)" }} />
-                )}
+      <p className="text-[10px] uppercase tracking-[0.16em] font-semibold" style={{ color: "var(--vs-cyan)" }}>{rotulo}</p>
+      <p className="text-[11px] mt-0.5 mb-4" style={{ color: "var(--vs-text-muted)" }}>Atende: {areas}</p>
+      <div className="flex items-center overflow-x-auto no-scrollbar">
+        {etapas.map((nome, i) => {
+          const isLast = i === etapas.length - 1;
+          return (
+            <React.Fragment key={nome}>
+              <div className="flex flex-col items-center gap-1.5 shrink-0" style={{ minWidth: 56 }}>
+                <div
+                  className="size-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+                  style={{
+                    background: isLast ? "#15803D" : "rgba(255,255,255,0.08)",
+                    color: isLast ? "#fff" : "var(--vs-text-muted)",
+                  }}
+                >
+                  {isLast ? <Check className="size-3.5" /> : i + 1}
+                </div>
+                <span className="text-[10px] text-center leading-tight" style={{ color: isLast ? undefined : "var(--vs-text-muted)" }}>
+                  {nome}
+                </span>
               </div>
-              <span className="text-[11px]" style={{ color: e.status === "pending" ? "var(--vs-text-muted)" : undefined }}>{e.nome}</span>
-            </div>
-            {i < etapas.length - 1 && (
-              <div className="flex-1 h-px mx-1" style={{ background: e.status === "done" ? "#15803D" : "rgba(255,255,255,0.12)" }} />
-            )}
-          </React.Fragment>
-        ))}
+              {!isLast && <div className="h-px w-4 shrink-0 mx-0.5 mb-5" style={{ background: "rgba(255,255,255,0.15)" }} />}
+            </React.Fragment>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function PreviewFluxo() {
+  return (
+    <div className="space-y-3">
+      <FluxoExemplo
+        rotulo="Modelo Setorial Profissional"
+        areas="Industrial, Engenharia, Facilities, Prestação de Serviços, Imobiliário, Saúde, Energia, Agronegócio, Logística"
+        etapas={["Suprimentos", "Gestor", "SSMA", "Assinatura", "Execução", "Monitoramento", "Encerramento"]}
+      />
+      <FluxoExemplo
+        rotulo="Modelo Empresarial Padrão"
+        areas="TI, Marketing, Consultoria, Startups, Escolas, Clínicas, Tecnologia, Eventos"
+        etapas={["Solicitação", "Análise", "Assinatura", "Execução", "Monitoramento", "Encerramento"]}
+      />
     </div>
   );
 }
