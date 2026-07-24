@@ -41,7 +41,7 @@ function FluxoExemplo({
     <div className="rounded-xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <p className="text-[10px] uppercase tracking-[0.16em] font-semibold" style={{ color: "var(--vs-cyan)" }}>{rotulo}</p>
       <p className="text-[11px] mt-0.5 mb-4" style={{ color: "var(--vs-text-muted)" }}>Atende: {areas}</p>
-      <div className="flex items-center overflow-x-auto no-scrollbar">
+      <div className="flex items-center overflow-x-auto no-scrollbar py-2">
         {etapas.map((nome, i) => {
           const isLast = i === etapas.length - 1;
           const isPast = i < ativo;
@@ -53,9 +53,9 @@ function FluxoExemplo({
                 <div
                   className="size-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 transition-all duration-500"
                   style={{
-                    background: isPast || (isLast && isCurrent) ? "#15803D" : isCurrent ? "var(--vs-cyan)" : "rgba(255,255,255,0.08)",
+                    background: isPast || (isLast && isCurrent) ? "#15803D" : isCurrent ? "#EDB111" : "rgba(255,255,255,0.08)",
                     color: isPast || isCurrent ? "#fff" : "var(--vs-text-muted)",
-                    boxShadow: isCurrent ? "0 0 0 4px rgba(44,167,201,0.25)" : "none",
+                    boxShadow: isCurrent ? "0 0 0 4px rgba(237,177,17,0.25)" : "none",
                     transform: isCurrent ? "scale(1.1)" : "scale(1)",
                   }}
                 >
