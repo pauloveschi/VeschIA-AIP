@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useEmpresa, useProdutoAtual, useProdutoContratado, useIsEmpresaStaff, produtoInfo } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { cn } from "@/lib/utils";
 import { LogOut, Settings2, Plus, FileText, FileStack } from "lucide-react";
 
@@ -63,7 +64,7 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
   const [open, setOpen] = React.useState(false);
   const [titulo, setTitulo] = React.useState("");
   const [fornecedor, setFornecedor] = React.useState("");
-  const [valor, setValor] = React.useState("");
+  const [valor, setValor] = React.useState<number | null>(null);
   const { user } = useAuth();
 
   const createMut = useMutation({
@@ -73,7 +74,7 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
         produto,
         titulo,
         fornecedor_nome: fornecedor || null,
-        valor: valor ? Number(valor.replace(",", ".")) : null,
+        valor,
         solicitante_id: user?.id,
       });
       if (error) throw error;
@@ -81,7 +82,7 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
     onSuccess: () => {
       setTitulo("");
       setFornecedor("");
-      setValor("");
+      setValor(null);
       setOpen(false);
       onCreated();
     },
@@ -100,7 +101,7 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
       <h3 className="text-sm font-medium">Nova solicitação</h3>
       <Input placeholder="Título (ex: Manutenção predial)" value={titulo} onChange={(e) => setTitulo(e.target.value)} className="h-9" />
       <Input placeholder="Fornecedor / contraparte" value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} className="h-9" />
-      <Input placeholder="Valor (R$)" value={valor} onChange={(e) => setValor(e.target.value)} className="h-9" inputMode="decimal" />
+      <CurrencyInput valueReais={valor} onChangeReais={setValor} className="h-9" />
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
         <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">

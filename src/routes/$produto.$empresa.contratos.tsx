@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useEmpresa, useProdutoAtual, produtoInfo } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { ChevronLeft, Plus, FileStack } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/contratos")({
@@ -64,7 +65,7 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
   const [open, setOpen] = React.useState(false);
   const [titulo, setTitulo] = React.useState("");
   const [fornecedor, setFornecedor] = React.useState("");
-  const [valor, setValor] = React.useState("");
+  const [valor, setValor] = React.useState<number | null>(null);
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -73,7 +74,7 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
         empresa_id: empresaId,
         titulo,
         fornecedor_nome: fornecedor || null,
-        valor: valor ? Number(valor.replace(",", ".")) : null,
+        valor,
         fase_atual_id: primeiraFase,
       });
       if (error) throw error;
@@ -81,7 +82,7 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
     onSuccess: () => {
       setTitulo("");
       setFornecedor("");
-      setValor("");
+      setValor(null);
       setOpen(false);
       onCreated();
     },
@@ -100,7 +101,7 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
       <h3 className="text-sm font-medium">Novo contrato</h3>
       <Input placeholder="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} className="h-9" />
       <Input placeholder="Fornecedor" value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} className="h-9" />
-      <Input placeholder="Valor (R$)" value={valor} onChange={(e) => setValor(e.target.value)} className="h-9" inputMode="decimal" />
+      <CurrencyInput valueReais={valor} onChangeReais={setValor} className="h-9" />
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
         <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
