@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus, Sparkles, User } from "lucide-react";
+import { ChevronLeft, Plus, Sparkles, User, Cog } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/configuracao")({
   component: ConfiguracaoPage,
@@ -22,7 +22,7 @@ interface EtapaConfig {
   id: string;
   ordem: number;
   nome_etapa: string;
-  responsavel_tipo: "papel" | "ia";
+  responsavel_tipo: "papel" | "ia" | "sistema";
   papel_id: string | null;
   obrigatoria: boolean;
   ativo: boolean;
@@ -306,7 +306,13 @@ function ConfiguracaoPage() {
               {etapas.map((etapa) => (
                 <div key={etapa.id} className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !etapa.ativo && "opacity-50")}>
                   <span className="text-xs text-muted-foreground w-5">{etapa.ordem}</span>
-                  {etapa.responsavel_tipo === "ia" ? <Sparkles className="size-4 text-accent shrink-0" /> : <User className="size-4 text-muted-foreground shrink-0" />}
+                  {etapa.responsavel_tipo === "ia" ? (
+                    <Sparkles className="size-4 text-accent shrink-0" />
+                  ) : etapa.responsavel_tipo === "sistema" ? (
+                    <Cog className="size-4 text-muted-foreground shrink-0" />
+                  ) : (
+                    <User className="size-4 text-muted-foreground shrink-0" />
+                  )}
                   <span className="flex-1 text-sm">{etapa.nome_etapa}</span>
                   {!etapa.obrigatoria && <span className="text-[11px] text-muted-foreground">opcional</span>}
                   <Switch checked={etapa.ativo} onCheckedChange={(v) => toggleAtivoMut.mutate({ id: etapa.id, ativo: v })} />
