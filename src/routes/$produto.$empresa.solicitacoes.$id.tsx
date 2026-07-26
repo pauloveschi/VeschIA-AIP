@@ -91,9 +91,10 @@ function resolverAprovadoresPorValor(condicao: CondicaoAprovacaoPorValor, valor:
   return Array.from(nomes);
 }
 
-function useEtapasExecucao(solicitacaoId: string, empresaId: string, produto: string, valor: number | null) {
+function useEtapasExecucao(solicitacaoId: string, empresaId: string, produto: string, valor: number | null, solicitacaoCarregada: boolean) {
   const qc = useQueryClient();
   const query = useQuery({
+    enabled: solicitacaoCarregada,
     queryKey: ["etapas-execucao", solicitacaoId],
     queryFn: async (): Promise<EtapaExecucao[]> => {
       const { data: configs, error: cErr } = await supabase
@@ -180,7 +181,7 @@ function SolicitacaoDetailPage() {
   const prod = useProdutoAtual();
   const { id } = Route.useParams();
   const { data: solicitacao, isLoading } = useSolicitacaoDetail(id);
-  const { data: etapas = [], isLoading: loadingEtapas, decidir } = useEtapasExecucao(id, empresa.id, prod, solicitacao?.valor ?? null);
+  const { data: etapas = [], isLoading: loadingEtapas, decidir } = useEtapasExecucao(id, empresa.id, prod, solicitacao?.valor ?? null, !!solicitacao);
 
   if (isLoading || loadingEtapas) {
     return <div className="min-h-svh grid place-items-center text-muted-foreground">Carregando…</div>;
