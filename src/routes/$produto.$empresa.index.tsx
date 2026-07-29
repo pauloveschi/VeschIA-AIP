@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useEmpresa, useProdutoAtual, useProdutoContratado, useIsEmpresaStaff, produtoInfo } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { LogOut, Settings2, Plus, FileText, FileStack } from "lucide-react";
 
@@ -18,6 +18,7 @@ interface Solicitacao {
   id: string;
   numero: number;
   titulo: string;
+  area: string | null;
   fornecedor_nome: string | null;
   valor: number | null;
   status: string;
@@ -28,6 +29,7 @@ interface Solicitacao {
 const statusMeta: Record<string, { label: string; fg: string; bg: string }> = {
   aberta: { label: "Aberta", fg: "var(--ops-aberta)", bg: "var(--ops-aberta-bg)" },
   em_analise: { label: "Em análise", fg: "var(--ops-em-analise)", bg: "var(--ops-em-analise-bg)" },
+  ajuste_solicitado: { label: "Ajuste solicitado", fg: "var(--ops-em-analise)", bg: "var(--ops-em-analise-bg)" },
   aprovada: { label: "Aprovada", fg: "var(--ops-aprovada)", bg: "var(--ops-aprovada-bg)" },
   rejeitada: { label: "Rejeitada", fg: "var(--ops-rejeitada)", bg: "var(--ops-rejeitada-bg)" },
   assinada: { label: "Assinada", fg: "var(--ops-assinada)", bg: "var(--ops-assinada-bg)" },
@@ -50,7 +52,7 @@ function useSolicitacoes(empresaId: string, produto: string) {
     queryFn: async (): Promise<Solicitacao[]> => {
       const { data, error } = await supabase
         .from("solicitacoes")
-        .select("id, numero, titulo, fornecedor_nome, valor, status, data_vencimento, created_at")
+        .select("id, numero, titulo, area, fornecedor_nome, valor, status, data_vencimento, created_at")
         .eq("empresa_id", empresaId)
         .eq("produto", produto)
         .order("created_at", { ascending: false });
@@ -63,8 +65,9 @@ function useSolicitacoes(empresaId: string, produto: string) {
 function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: string; produto: string; onCreated: () => void }) {
   const [open, setOpen] = React.useState(false);
   const [titulo, setTitulo] = React.useState("");
-  const [fornecedor, setFornecedor] = React.useState("");
-  const [valor, setValor] = React.useState<number | null>(null);
+  const [descricao, setDescricao] = React.useState("");
+  const [area, setArea] = React.useState("");
+  const [centroCusto, setCentroCusto] = React.useState("");
   const { user } = useAuth();
 
   const createMut = useMutation({
@@ -73,16 +76,18 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
         empresa_id: empresaId,
         produto,
         titulo,
-        fornecedor_nome: fornecedor || null,
-        valor,
+        descricao: descricao || null,
+        area: area || null,
+        centro_custo: centroCusto || null,
         solicitante_id: user?.id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       setTitulo("");
-      setFornecedor("");
-      setValor(null);
+      setDescricao("");
+      setArea("");
+      setCentroCusto("");
       setOpen(false);
       onCreated();
     },
@@ -100,8 +105,11 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
     <div className="rounded-xl border p-4 space-y-2.5 bg-card">
       <h3 className="text-sm font-medium">Nova solicitação</h3>
       <Input placeholder="Título (ex: Manutenção predial)" value={titulo} onChange={(e) => setTitulo(e.target.value)} className="h-9" />
-      <Input placeholder="Fornecedor / contraparte" value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} className="h-9" />
-      <CurrencyInput valueReais={valor} onChangeReais={setValor} className="h-9" />
+      <Textarea placeholder="Descrição (o que a área precisa e por quê)" value={descricao} onChange={(e) => setDescricao(e.target.value)} className="min-h-20" />
+      <div className="grid grid-cols-2 gap-2">
+        <Input placeholder="Área" value={area} onChange={(e) => setArea(e.target.value)} className="h-9" />
+        <Input placeholder="Centro de custo" value={centroCusto} onChange={(e) => setCentroCusto(e.target.value)} className="h-9" />
+      </div>
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
         <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
@@ -223,6 +231,7 @@ function DashboardPage() {
                 <h3 className="text-[15px] font-semibold mt-1.5 flex items-center gap-1.5">
                   <FileText className="size-3.5 text-muted-foreground" /> {s.titulo}
                 </h3>
+                {s.area && <p className="text-[12.5px] text-muted-foreground">{s.area}</p>}
                 {s.fornecedor_nome && <p className="text-[12.5px] text-muted-foreground">{s.fornecedor_nome}</p>}
                 {s.valor != null && (
                   <p className="mt-2 font-semibold" style={{ color: "var(--accent)" }}>

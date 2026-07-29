@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Check, Clock, Sparkles, X, Cog } from "lucide-react";
+import { ChevronLeft, Check, Clock, Sparkles, X, Cog, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/solicitacoes/$id")({
   component: SolicitacaoDetailPage,
@@ -49,6 +49,9 @@ interface SolicitacaoDetail {
   id: string;
   numero: number;
   titulo: string;
+  descricao: string | null;
+  area: string | null;
+  centro_custo: string | null;
   fornecedor_nome: string | null;
   valor: number | null;
   status: string;
@@ -66,7 +69,7 @@ function useSolicitacaoDetail(id: string) {
     queryFn: async (): Promise<SolicitacaoDetail> => {
       const { data, error } = await supabase
         .from("solicitacoes")
-        .select("id, numero, titulo, fornecedor_nome, valor, status, data_vencimento")
+        .select("id, numero, titulo, descricao, area, centro_custo, fornecedor_nome, valor, status, data_vencimento")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -208,7 +211,9 @@ function SolicitacaoDetailPage() {
       <main className="max-w-3xl mx-auto px-5 py-6">
         <p className="text-[12px] text-muted-foreground">Solicitação #{solicitacao.numero}</p>
         <h1 className="text-xl font-semibold mt-1">{solicitacao.titulo}</h1>
-        {solicitacao.fornecedor_nome && <p className="text-sm text-muted-foreground mt-0.5">{solicitacao.fornecedor_nome}</p>}
+        {solicitacao.area && <p className="text-sm text-muted-foreground mt-0.5">{solicitacao.area}{solicitacao.centro_custo ? ` · ${solicitacao.centro_custo}` : ""}</p>}
+        {solicitacao.descricao && <p className="text-sm mt-2">{solicitacao.descricao}</p>}
+        {solicitacao.fornecedor_nome && <p className="text-sm text-muted-foreground mt-2">Fornecedor escolhido: {solicitacao.fornecedor_nome}</p>}
         {solicitacao.valor != null && (
           <p className="text-lg font-semibold mt-2" style={{ color: "var(--accent)" }}>
             {solicitacao.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -222,6 +227,7 @@ function SolicitacaoDetailPage() {
             etapas.map((etapa) => {
               const isIa = etapa.configuracao_fluxo.responsavel_tipo === "ia";
               const isSistema = etapa.configuracao_fluxo.responsavel_tipo === "sistema";
+              const isNegociacao = etapa.configuracao_fluxo.nome_etapa === "Negociação Comercial";
               const isPendente = etapa.status === "pendente";
               const bg =
                 etapa.status === "aprovada" ? "var(--ops-aprovada)" : etapa.status === "rejeitada" ? "var(--ops-rejeitada)" : "var(--muted)";
@@ -247,7 +253,18 @@ function SolicitacaoDetailPage() {
                       {!etapa.configuracao_fluxo.obrigatoria && " · opcional"}
                     </p>
                   </div>
-                  {isPendente && !isIa && !isSistema && (
+                  {isNegociacao && isPendente && (
+                    <Link
+                      to="/$produto/$empresa/solicitacoes/$id/negociacao"
+                      params={{ produto, empresa: empresaSlug, id }}
+                      className="shrink-0"
+                    >
+                      <Button size="sm" className="h-8 bg-primary text-primary-foreground">
+                        Gerenciar negociação <ArrowUpRight className="size-3.5 ml-1" />
+                      </Button>
+                    </Link>
+                  )}
+                  {isPendente && !isIa && !isSistema && !isNegociacao && (
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" className="h-8 text-destructive border-destructive/30" onClick={() => decidir.mutate({ etapaId: etapa.id, status: "rejeitada" })}>
                         Rejeitar
