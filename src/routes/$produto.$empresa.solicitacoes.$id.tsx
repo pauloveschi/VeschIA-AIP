@@ -255,7 +255,7 @@ function SolicitacaoDetailPage() {
                   </div>
                   {isNegociacao && isPendente && (
                     <Link
-                      to="/$produto/$empresa/solicitacoes/$id/negociacao"
+                      to="/$produto/$empresa/negociacao/$id"
                       params={{ produto, empresa: empresaSlug, id }}
                       className="shrink-0"
                     >
