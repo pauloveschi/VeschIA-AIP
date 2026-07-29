@@ -21,7 +21,7 @@ import { Route as ProdutoEmpresaConfiguracaoRouteImport } from './routes/$produt
 import { Route as ProdutoEmpresaContratosRouteImport } from './routes/$produto.$empresa.contratos'
 import { Route as ProdutoEmpresaContratosIdRouteImport } from './routes/$produto.$empresa.contratos.$id'
 import { Route as ProdutoEmpresaSolicitacoesIdRouteImport } from './routes/$produto.$empresa.solicitacoes.$id'
-import { Route as ProdutoEmpresaSolicitacoesIdNegociacaoRouteImport } from './routes/$produto.$empresa.solicitacoes.$id.negociacao'
+import { Route as ProdutoEmpresaNegociacaoIdRouteImport } from './routes/$produto.$empresa.negociacao.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -86,11 +86,11 @@ const ProdutoEmpresaSolicitacoesIdRoute =
     path: '/solicitacoes/$id',
     getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
-const ProdutoEmpresaSolicitacoesIdNegociacaoRoute =
-  ProdutoEmpresaSolicitacoesIdNegociacaoRouteImport.update({
-    id: '/negociacao',
-    path: '/negociacao',
-    getParentRoute: () => ProdutoEmpresaSolicitacoesIdRoute,
+const ProdutoEmpresaNegociacaoIdRoute =
+  ProdutoEmpresaNegociacaoIdRouteImport.update({
+    id: '/negociacao/$id',
+    path: '/negociacao/$id',
+    getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -105,8 +105,8 @@ export interface FileRoutesByFullPath {
   '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa/': typeof ProdutoEmpresaIndexRoute
   '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
-  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRouteWithChildren
-  '/$produto/$empresa/solicitacoes/$id/negociacao': typeof ProdutoEmpresaSolicitacoesIdNegociacaoRoute
+  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
+  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,8 +118,8 @@ export interface FileRoutesByTo {
   '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa': typeof ProdutoEmpresaIndexRoute
   '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
-  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRouteWithChildren
-  '/$produto/$empresa/solicitacoes/$id/negociacao': typeof ProdutoEmpresaSolicitacoesIdNegociacaoRoute
+  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
+  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,8 +134,8 @@ export interface FileRoutesById {
   '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa/': typeof ProdutoEmpresaIndexRoute
   '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
-  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRouteWithChildren
-  '/$produto/$empresa/solicitacoes/$id/negociacao': typeof ProdutoEmpresaSolicitacoesIdNegociacaoRoute
+  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
+  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -152,7 +152,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/'
     | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
-    | '/$produto/$empresa/solicitacoes/$id/negociacao'
+    | '/$produto/$empresa/negociacao/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -165,7 +165,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa'
     | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
-    | '/$produto/$empresa/solicitacoes/$id/negociacao'
+    | '/$produto/$empresa/negociacao/$id'
   id:
     | '__root__'
     | '/'
@@ -180,7 +180,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/'
     | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
-    | '/$produto/$empresa/solicitacoes/$id/negociacao'
+    | '/$produto/$empresa/negociacao/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -276,12 +276,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoEmpresaSolicitacoesIdRouteImport
       parentRoute: typeof ProdutoEmpresaRoute
     }
-    '/$produto/$empresa/solicitacoes/$id/negociacao': {
-      id: '/$produto/$empresa/solicitacoes/$id/negociacao'
-      path: '/negociacao'
-      fullPath: '/$produto/$empresa/solicitacoes/$id/negociacao'
-      preLoaderRoute: typeof ProdutoEmpresaSolicitacoesIdNegociacaoRouteImport
-      parentRoute: typeof ProdutoEmpresaSolicitacoesIdRoute
+    '/$produto/$empresa/negociacao/$id': {
+      id: '/$produto/$empresa/negociacao/$id'
+      path: '/negociacao/$id'
+      fullPath: '/$produto/$empresa/negociacao/$id'
+      preLoaderRoute: typeof ProdutoEmpresaNegociacaoIdRouteImport
+      parentRoute: typeof ProdutoEmpresaRoute
     }
   }
 }
@@ -300,27 +300,13 @@ const ProdutoEmpresaContratosRouteWithChildren =
     ProdutoEmpresaContratosRouteChildren,
   )
 
-interface ProdutoEmpresaSolicitacoesIdRouteChildren {
-  ProdutoEmpresaSolicitacoesIdNegociacaoRoute: typeof ProdutoEmpresaSolicitacoesIdNegociacaoRoute
-}
-
-const ProdutoEmpresaSolicitacoesIdRouteChildren: ProdutoEmpresaSolicitacoesIdRouteChildren =
-  {
-    ProdutoEmpresaSolicitacoesIdNegociacaoRoute:
-      ProdutoEmpresaSolicitacoesIdNegociacaoRoute,
-  }
-
-const ProdutoEmpresaSolicitacoesIdRouteWithChildren =
-  ProdutoEmpresaSolicitacoesIdRoute._addFileChildren(
-    ProdutoEmpresaSolicitacoesIdRouteChildren,
-  )
-
 interface ProdutoEmpresaRouteChildren {
   ProdutoEmpresaAuthRoute: typeof ProdutoEmpresaAuthRoute
   ProdutoEmpresaConfiguracaoRoute: typeof ProdutoEmpresaConfiguracaoRoute
   ProdutoEmpresaContratosRoute: typeof ProdutoEmpresaContratosRouteWithChildren
   ProdutoEmpresaIndexRoute: typeof ProdutoEmpresaIndexRoute
-  ProdutoEmpresaSolicitacoesIdRoute: typeof ProdutoEmpresaSolicitacoesIdRouteWithChildren
+  ProdutoEmpresaSolicitacoesIdRoute: typeof ProdutoEmpresaSolicitacoesIdRoute
+  ProdutoEmpresaNegociacaoIdRoute: typeof ProdutoEmpresaNegociacaoIdRoute
 }
 
 const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
@@ -328,7 +314,8 @@ const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
   ProdutoEmpresaConfiguracaoRoute: ProdutoEmpresaConfiguracaoRoute,
   ProdutoEmpresaContratosRoute: ProdutoEmpresaContratosRouteWithChildren,
   ProdutoEmpresaIndexRoute: ProdutoEmpresaIndexRoute,
-  ProdutoEmpresaSolicitacoesIdRoute: ProdutoEmpresaSolicitacoesIdRouteWithChildren,
+  ProdutoEmpresaSolicitacoesIdRoute: ProdutoEmpresaSolicitacoesIdRoute,
+  ProdutoEmpresaNegociacaoIdRoute: ProdutoEmpresaNegociacaoIdRoute,
 }
 
 const ProdutoEmpresaRouteWithChildren = ProdutoEmpresaRoute._addFileChildren(
