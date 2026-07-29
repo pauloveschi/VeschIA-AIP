@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ChevronLeft, Plus, Building2, User, Trophy, Ban } from "lucide-react";
+import { ChevronLeft, Plus, Building2, User, Trophy, Ban, Pencil, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/negociacao/$id")({
   component: NegociacaoPage,
@@ -141,50 +141,127 @@ function StatusBadge({ status }: { status: StatusNegociacao }) {
   );
 }
 
-function NovoFornecedorForm({ solicitacaoId, onCreated }: { solicitacaoId: string; onCreated: () => void }) {
-  const [open, setOpen] = React.useState(false);
-  const [tipoPessoa, setTipoPessoa] = React.useState<TipoPessoa>("juridica");
-  const [nome, setNome] = React.useState("");
-  const [documento, setDocumento] = React.useState("");
-  const [nacionalidade, setNacionalidade] = React.useState("");
-  const [estadoCivil, setEstadoCivil] = React.useState("");
-  const [profissao, setProfissao] = React.useState("");
-  const [cep, setCep] = React.useState("");
-  const [logradouro, setLogradouro] = React.useState("");
-  const [numero, setNumero] = React.useState("");
-  const [complemento, setComplemento] = React.useState("");
-  const [bairro, setBairro] = React.useState("");
-  const [cidade, setCidade] = React.useState("");
-  const [estado, setEstado] = React.useState("");
+interface FornecedorFormValues {
+  tipoPessoa: TipoPessoa;
+  nome: string;
+  documento: string;
+  nacionalidade: string;
+  estadoCivil: string;
+  profissao: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  objetoContrato: string;
+  detalhesServico: string;
+  valorNegociado: number | null;
+  condicoes: string;
+  vigenciaDias: string;
+  dataInicio: string;
+  emailContratante: string;
+  emailContratado: string;
+  testemunha1Nome: string;
+  testemunha1Email: string;
+  testemunha2Nome: string;
+  testemunha2Email: string;
+}
+
+function valoresIniciais(n: Negociacao | null): FornecedorFormValues {
+  if (!n) {
+    return {
+      tipoPessoa: "juridica",
+      nome: "",
+      documento: "",
+      nacionalidade: "",
+      estadoCivil: "",
+      profissao: "",
+      cep: "",
+      logradouro: "",
+      numero: "",
+      complemento: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      objetoContrato: "",
+      detalhesServico: "",
+      valorNegociado: null,
+      condicoes: "",
+      vigenciaDias: "",
+      dataInicio: "",
+      emailContratante: "",
+      emailContratado: "",
+      testemunha1Nome: "",
+      testemunha1Email: "",
+      testemunha2Nome: "",
+      testemunha2Email: "",
+    };
+  }
+  return {
+    tipoPessoa: n.tipo_pessoa,
+    nome: n.fornecedor_nome,
+    documento: formatDocumento(n.fornecedor_documento, n.tipo_pessoa),
+    nacionalidade: n.fornecedor_nacionalidade ?? "",
+    estadoCivil: n.fornecedor_estado_civil ?? "",
+    profissao: n.fornecedor_profissao ?? "",
+    cep: n.fornecedor_cep ?? "",
+    logradouro: n.fornecedor_logradouro ?? "",
+    numero: n.fornecedor_numero ?? "",
+    complemento: n.fornecedor_complemento ?? "",
+    bairro: n.fornecedor_bairro ?? "",
+    cidade: n.fornecedor_cidade ?? "",
+    estado: n.fornecedor_estado ?? "",
+    objetoContrato: n.objeto_contrato ?? "",
+    detalhesServico: n.detalhes_servico ?? "",
+    valorNegociado: n.valor_negociado,
+    condicoes: n.condicoes ?? "",
+    vigenciaDias: n.vigencia_dias != null ? String(n.vigencia_dias) : "",
+    dataInicio: n.data_inicio ?? "",
+    emailContratante: n.email_contratante ?? "",
+    emailContratado: n.email_contratado ?? "",
+    testemunha1Nome: n.testemunha_1_nome ?? "",
+    testemunha1Email: n.testemunha_1_email ?? "",
+    testemunha2Nome: n.testemunha_2_nome ?? "",
+    testemunha2Email: n.testemunha_2_email ?? "",
+  };
+}
+
+/** Formulário de fornecedor, usado tanto pra cadastrar quanto pra editar (enquanto status = participante). */
+function FornecedorForm({
+  initial,
+  onSubmit,
+  onCancel,
+  submitLabel,
+  submitting,
+}: {
+  initial: Negociacao | null;
+  onSubmit: (v: FornecedorFormValues, dataTermino: string | null) => void;
+  onCancel: () => void;
+  submitLabel: string;
+  submitting: boolean;
+}) {
+  const [v, setV] = React.useState<FornecedorFormValues>(() => valoresIniciais(initial));
   const [buscandoCep, setBuscandoCep] = React.useState(false);
-  const [objetoContrato, setObjetoContrato] = React.useState("");
-  const [detalhesServico, setDetalhesServico] = React.useState("");
-  const [valorNegociado, setValorNegociado] = React.useState<number | null>(null);
-  const [condicoes, setCondicoes] = React.useState("");
-  const [vigenciaDias, setVigenciaDias] = React.useState("");
-  const [dataInicio, setDataInicio] = React.useState("");
-  const [emailContratante, setEmailContratante] = React.useState("");
-  const [emailContratado, setEmailContratado] = React.useState("");
-  const [testemunha1Nome, setTestemunha1Nome] = React.useState("");
-  const [testemunha1Email, setTestemunha1Email] = React.useState("");
-  const [testemunha2Nome, setTestemunha2Nome] = React.useState("");
-  const [testemunha2Email, setTestemunha2Email] = React.useState("");
   const [erro, setErro] = React.useState<string | null>(null);
 
-  const dataTermino = dataInicio && vigenciaDias ? somarDias(dataInicio, Number(vigenciaDias) - 30) : null;
+  const set = <K extends keyof FornecedorFormValues>(k: K, val: FornecedorFormValues[K]) => setV((prev) => ({ ...prev, [k]: val }));
+
+  const dataTermino = v.dataInicio && v.vigenciaDias ? somarDias(v.dataInicio, Number(v.vigenciaDias) - 30) : null;
 
   const buscarCep = async () => {
-    const digits = onlyDigits(cep);
+    const digits = onlyDigits(v.cep);
     if (digits.length !== 8) return;
     setBuscandoCep(true);
     try {
       const resp = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
       const data = await resp.json();
       if (!data.erro) {
-        setLogradouro(data.logradouro ?? "");
-        setBairro(data.bairro ?? "");
-        setCidade(data.localidade ?? "");
-        setEstado(data.uf ?? "");
+        set("logradouro", data.logradouro ?? "");
+        set("bairro", data.bairro ?? "");
+        set("cidade", data.localidade ?? "");
+        set("estado", data.uf ?? "");
       }
     } catch {
       // silencioso: CEP não achado não deve travar o cadastro, o negociador preenche manual
@@ -193,162 +270,88 @@ function NovoFornecedorForm({ solicitacaoId, onCreated }: { solicitacaoId: strin
     }
   };
 
-  const reset = () => {
-    setTipoPessoa("juridica");
-    setNome("");
-    setDocumento("");
-    setNacionalidade("");
-    setEstadoCivil("");
-    setProfissao("");
-    setCep("");
-    setLogradouro("");
-    setNumero("");
-    setComplemento("");
-    setBairro("");
-    setCidade("");
-    setEstado("");
-    setObjetoContrato("");
-    setDetalhesServico("");
-    setValorNegociado(null);
-    setCondicoes("");
-    setVigenciaDias("");
-    setDataInicio("");
-    setEmailContratante("");
-    setEmailContratado("");
-    setTestemunha1Nome("");
-    setTestemunha1Email("");
-    setTestemunha2Nome("");
-    setTestemunha2Email("");
+  const tentarSubmeter = () => {
+    if (!validarDocumento(v.documento, v.tipoPessoa)) {
+      setErro(v.tipoPessoa === "fisica" ? "CPF inválido." : "CNPJ inválido.");
+      return;
+    }
     setErro(null);
+    onSubmit(v, dataTermino);
   };
-
-  const createMut = useMutation({
-    mutationFn: async () => {
-      if (!validarDocumento(documento, tipoPessoa)) {
-        throw new Error(tipoPessoa === "fisica" ? "CPF inválido." : "CNPJ inválido.");
-      }
-      const { error } = await supabase.from("negociacoes").insert({
-        solicitacao_id: solicitacaoId,
-        tipo_pessoa: tipoPessoa,
-        fornecedor_nome: nome,
-        fornecedor_documento: onlyDigits(documento),
-        fornecedor_nacionalidade: tipoPessoa === "fisica" ? nacionalidade || null : null,
-        fornecedor_estado_civil: tipoPessoa === "fisica" ? estadoCivil || null : null,
-        fornecedor_profissao: tipoPessoa === "fisica" ? profissao || null : null,
-        fornecedor_cep: cep || null,
-        fornecedor_logradouro: logradouro || null,
-        fornecedor_numero: numero || null,
-        fornecedor_complemento: complemento || null,
-        fornecedor_bairro: bairro || null,
-        fornecedor_cidade: cidade || null,
-        fornecedor_estado: estado || null,
-        objeto_contrato: objetoContrato || null,
-        detalhes_servico: detalhesServico || null,
-        valor_negociado: valorNegociado,
-        condicoes: condicoes || null,
-        vigencia_dias: vigenciaDias ? Number(vigenciaDias) : null,
-        data_inicio: dataInicio || null,
-        data_termino: dataTermino,
-        email_contratante: emailContratante || null,
-        email_contratado: emailContratado || null,
-        testemunha_1_nome: testemunha1Nome || null,
-        testemunha_1_email: testemunha1Email || null,
-        testemunha_2_nome: testemunha2Nome || null,
-        testemunha_2_email: testemunha2Email || null,
-      });
-      if (error) throw error;
-    },
-    onError: (e: Error) => setErro(e.message),
-    onSuccess: () => {
-      reset();
-      setOpen(false);
-      onCreated();
-    },
-  });
-
-  if (!open) {
-    return (
-      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm bg-primary text-primary-foreground">
-        <Plus className="size-4 mr-1" /> Cadastrar empresa participante
-      </Button>
-    );
-  }
 
   return (
     <div className="rounded-xl border p-4 space-y-3 bg-card">
-      <h3 className="text-sm font-medium">Nova empresa participante</h3>
-
       <div className="flex gap-2">
         <Button
           type="button"
           size="sm"
-          variant={tipoPessoa === "juridica" ? "default" : "outline"}
-          className={tipoPessoa === "juridica" ? "bg-primary text-primary-foreground" : ""}
-          onClick={() => setTipoPessoa("juridica")}
+          variant={v.tipoPessoa === "juridica" ? "default" : "outline"}
+          className={v.tipoPessoa === "juridica" ? "bg-primary text-primary-foreground" : ""}
+          onClick={() => set("tipoPessoa", "juridica")}
         >
           <Building2 className="size-3.5 mr-1" /> Pessoa Jurídica
         </Button>
         <Button
           type="button"
           size="sm"
-          variant={tipoPessoa === "fisica" ? "default" : "outline"}
-          className={tipoPessoa === "fisica" ? "bg-primary text-primary-foreground" : ""}
-          onClick={() => setTipoPessoa("fisica")}
+          variant={v.tipoPessoa === "fisica" ? "default" : "outline"}
+          className={v.tipoPessoa === "fisica" ? "bg-primary text-primary-foreground" : ""}
+          onClick={() => set("tipoPessoa", "fisica")}
         >
           <User className="size-3.5 mr-1" /> Pessoa Física
         </Button>
       </div>
 
       <Input
-        placeholder={tipoPessoa === "fisica" ? "Nome completo" : "Razão social"}
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
+        placeholder={v.tipoPessoa === "fisica" ? "Nome completo" : "Razão social"}
+        value={v.nome}
+        onChange={(e) => set("nome", e.target.value)}
         className="h-9"
       />
       <Input
-        placeholder={tipoPessoa === "fisica" ? "CPF" : "CNPJ"}
-        value={documento}
-        onChange={(e) => setDocumento(formatDocumento(e.target.value, tipoPessoa))}
+        placeholder={v.tipoPessoa === "fisica" ? "CPF" : "CNPJ"}
+        value={v.documento}
+        onChange={(e) => set("documento", formatDocumento(e.target.value, v.tipoPessoa))}
         className="h-9"
       />
 
-      {tipoPessoa === "fisica" && (
+      {v.tipoPessoa === "fisica" && (
         <div className="grid grid-cols-3 gap-2">
-          <Input placeholder="Nacionalidade" value={nacionalidade} onChange={(e) => setNacionalidade(e.target.value)} className="h-9" />
-          <Input placeholder="Estado civil" value={estadoCivil} onChange={(e) => setEstadoCivil(e.target.value)} className="h-9" />
-          <Input placeholder="Profissão" value={profissao} onChange={(e) => setProfissao(e.target.value)} className="h-9" />
+          <Input placeholder="Nacionalidade" value={v.nacionalidade} onChange={(e) => set("nacionalidade", e.target.value)} className="h-9" />
+          <Input placeholder="Estado civil" value={v.estadoCivil} onChange={(e) => set("estadoCivil", e.target.value)} className="h-9" />
+          <Input placeholder="Profissão" value={v.profissao} onChange={(e) => set("profissao", e.target.value)} className="h-9" />
         </div>
       )}
 
       <div className="flex gap-2">
-        <Input placeholder="CEP" value={cep} onChange={(e) => setCep(e.target.value)} onBlur={buscarCep} className="h-9 w-32" />
+        <Input placeholder="CEP" value={v.cep} onChange={(e) => set("cep", e.target.value)} onBlur={buscarCep} className="h-9 w-32" />
         <Button type="button" size="sm" variant="outline" disabled={buscandoCep} onClick={buscarCep}>
           {buscandoCep ? "Buscando…" : "Buscar CEP"}
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Input placeholder="Logradouro" value={logradouro} onChange={(e) => setLogradouro(e.target.value)} className="h-9" />
-        <Input placeholder="Bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} className="h-9" />
-        <Input placeholder="Cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} className="h-9" />
-        <Input placeholder="Estado" value={estado} onChange={(e) => setEstado(e.target.value)} className="h-9" />
-        <Input placeholder="Número" value={numero} onChange={(e) => setNumero(e.target.value)} className="h-9" />
-        <Input placeholder="Complemento" value={complemento} onChange={(e) => setComplemento(e.target.value)} className="h-9" />
+        <Input placeholder="Logradouro" value={v.logradouro} onChange={(e) => set("logradouro", e.target.value)} className="h-9" />
+        <Input placeholder="Bairro" value={v.bairro} onChange={(e) => set("bairro", e.target.value)} className="h-9" />
+        <Input placeholder="Cidade" value={v.cidade} onChange={(e) => set("cidade", e.target.value)} className="h-9" />
+        <Input placeholder="Estado" value={v.estado} onChange={(e) => set("estado", e.target.value)} className="h-9" />
+        <Input placeholder="Número" value={v.numero} onChange={(e) => set("numero", e.target.value)} className="h-9" />
+        <Input placeholder="Complemento" value={v.complemento} onChange={(e) => set("complemento", e.target.value)} className="h-9" />
       </div>
 
-      <Textarea placeholder="Objeto do contrato" value={objetoContrato} onChange={(e) => setObjetoContrato(e.target.value)} className="min-h-16" />
-      <Textarea placeholder="Detalhes do serviço" value={detalhesServico} onChange={(e) => setDetalhesServico(e.target.value)} className="min-h-16" />
+      <Textarea placeholder="Objeto do contrato" value={v.objetoContrato} onChange={(e) => set("objetoContrato", e.target.value)} className="min-h-16" />
+      <Textarea placeholder="Detalhes do serviço" value={v.detalhesServico} onChange={(e) => set("detalhesServico", e.target.value)} className="min-h-16" />
 
-      <CurrencyInput valueReais={valorNegociado} onChangeReais={setValorNegociado} placeholder="Valor negociado" className="h-9" />
-      <Textarea placeholder="Condições (pagamento, parcelamento, etc)" value={condicoes} onChange={(e) => setCondicoes(e.target.value)} className="min-h-16" />
+      <CurrencyInput valueReais={v.valorNegociado} onChangeReais={(n) => set("valorNegociado", n)} placeholder="Valor negociado" className="h-9" />
+      <Textarea placeholder="Condições (pagamento, parcelamento, etc)" value={v.condicoes} onChange={(e) => set("condicoes", e.target.value)} className="min-h-16" />
 
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-[12px] text-muted-foreground">Data de início</label>
-          <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="h-9" />
+          <Input type="date" value={v.dataInicio} onChange={(e) => set("dataInicio", e.target.value)} className="h-9" />
         </div>
         <div>
           <label className="text-[12px] text-muted-foreground">Vigência (dias)</label>
-          <Input type="number" placeholder="Ex: 180" value={vigenciaDias} onChange={(e) => setVigenciaDias(e.target.value)} className="h-9" />
+          <Input type="number" placeholder="Ex: 180" value={v.vigenciaDias} onChange={(e) => set("vigenciaDias", e.target.value)} className="h-9" />
         </div>
       </div>
       {dataTermino && (
@@ -358,26 +361,57 @@ function NovoFornecedorForm({ solicitacaoId, onCreated }: { solicitacaoId: strin
       )}
 
       <div className="grid grid-cols-2 gap-2">
-        <Input placeholder="E-mail de assinatura · Contratante" value={emailContratante} onChange={(e) => setEmailContratante(e.target.value)} className="h-9" />
-        <Input placeholder="E-mail de assinatura · Contratado" value={emailContratado} onChange={(e) => setEmailContratado(e.target.value)} className="h-9" />
+        <Input placeholder="E-mail de assinatura · Contratante" value={v.emailContratante} onChange={(e) => set("emailContratante", e.target.value)} className="h-9" />
+        <Input placeholder="E-mail de assinatura · Contratado" value={v.emailContratado} onChange={(e) => set("emailContratado", e.target.value)} className="h-9" />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Input placeholder="Testemunha 1 · Nome" value={testemunha1Nome} onChange={(e) => setTestemunha1Nome(e.target.value)} className="h-9" />
-        <Input placeholder="Testemunha 1 · E-mail" value={testemunha1Email} onChange={(e) => setTestemunha1Email(e.target.value)} className="h-9" />
-        <Input placeholder="Testemunha 2 · Nome" value={testemunha2Nome} onChange={(e) => setTestemunha2Nome(e.target.value)} className="h-9" />
-        <Input placeholder="Testemunha 2 · E-mail" value={testemunha2Email} onChange={(e) => setTestemunha2Email(e.target.value)} className="h-9" />
+        <Input placeholder="Testemunha 1 · Nome" value={v.testemunha1Nome} onChange={(e) => set("testemunha1Nome", e.target.value)} className="h-9" />
+        <Input placeholder="Testemunha 1 · E-mail" value={v.testemunha1Email} onChange={(e) => set("testemunha1Email", e.target.value)} className="h-9" />
+        <Input placeholder="Testemunha 2 · Nome" value={v.testemunha2Nome} onChange={(e) => set("testemunha2Nome", e.target.value)} className="h-9" />
+        <Input placeholder="Testemunha 2 · E-mail" value={v.testemunha2Email} onChange={(e) => set("testemunha2Email", e.target.value)} className="h-9" />
       </div>
 
       {erro && <p className="text-[12px] text-destructive">{erro}</p>}
 
       <div className="flex gap-2 justify-end">
-        <Button size="sm" variant="ghost" onClick={() => { reset(); setOpen(false); }}>Cancelar</Button>
-        <Button size="sm" disabled={!nome || !documento || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
-          Cadastrar
+        <Button size="sm" variant="ghost" onClick={onCancel}>Cancelar</Button>
+        <Button size="sm" disabled={!v.nome || !v.documento || submitting} onClick={tentarSubmeter} className="bg-primary text-primary-foreground">
+          {submitLabel}
         </Button>
       </div>
     </div>
   );
+}
+
+function valuesParaLinhaDb(v: FornecedorFormValues, dataTermino: string | null) {
+  return {
+    tipo_pessoa: v.tipoPessoa,
+    fornecedor_nome: v.nome,
+    fornecedor_documento: onlyDigits(v.documento),
+    fornecedor_nacionalidade: v.tipoPessoa === "fisica" ? v.nacionalidade || null : null,
+    fornecedor_estado_civil: v.tipoPessoa === "fisica" ? v.estadoCivil || null : null,
+    fornecedor_profissao: v.tipoPessoa === "fisica" ? v.profissao || null : null,
+    fornecedor_cep: v.cep || null,
+    fornecedor_logradouro: v.logradouro || null,
+    fornecedor_numero: v.numero || null,
+    fornecedor_complemento: v.complemento || null,
+    fornecedor_bairro: v.bairro || null,
+    fornecedor_cidade: v.cidade || null,
+    fornecedor_estado: v.estado || null,
+    objeto_contrato: v.objetoContrato || null,
+    detalhes_servico: v.detalhesServico || null,
+    valor_negociado: v.valorNegociado,
+    condicoes: v.condicoes || null,
+    vigencia_dias: v.vigenciaDias ? Number(v.vigenciaDias) : null,
+    data_inicio: v.dataInicio || null,
+    data_termino: dataTermino,
+    email_contratante: v.emailContratante || null,
+    email_contratado: v.emailContratado || null,
+    testemunha_1_nome: v.testemunha1Nome || null,
+    testemunha_1_email: v.testemunha1Email || null,
+    testemunha_2_nome: v.testemunha2Nome || null,
+    testemunha_2_email: v.testemunha2Email || null,
+  };
 }
 
 function EscolherFornecedor({ negociacao, solicitacaoId, onDone }: { negociacao: Negociacao; solicitacaoId: string; onDone: () => void }) {
@@ -455,6 +489,108 @@ function EscolherFornecedor({ negociacao, solicitacaoId, onDone }: { negociacao:
   );
 }
 
+function NegociacaoCard({ negociacao, solicitacaoId, onChange }: { negociacao: Negociacao; solicitacaoId: string; onChange: () => void }) {
+  const [editando, setEditando] = React.useState(false);
+
+  const editarMut = useMutation({
+    mutationFn: async ({ v, dataTermino }: { v: FornecedorFormValues; dataTermino: string | null }) => {
+      const { error } = await supabase.from("negociacoes").update(valuesParaLinhaDb(v, dataTermino)).eq("id", negociacao.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditando(false);
+      onChange();
+    },
+  });
+
+  if (editando) {
+    return (
+      <FornecedorForm
+        initial={negociacao}
+        submitLabel="Salvar alterações"
+        submitting={editarMut.isPending}
+        onCancel={() => setEditando(false)}
+        onSubmit={(v, dataTermino) => editarMut.mutate({ v, dataTermino })}
+      />
+    );
+  }
+
+  const podeEditar = negociacao.status === "participante";
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          {negociacao.tipo_pessoa === "fisica" ? <User className="size-3.5 text-muted-foreground" /> : <Building2 className="size-3.5 text-muted-foreground" />}
+          <span className="text-sm font-medium">{negociacao.fornecedor_nome}</span>
+        </div>
+        <StatusBadge status={negociacao.status} />
+      </div>
+      <p className="text-[12px] text-muted-foreground font-mono">{formatDocumento(negociacao.fornecedor_documento, negociacao.tipo_pessoa)}</p>
+      {negociacao.objeto_contrato && <p className="text-[13px]">{negociacao.objeto_contrato}</p>}
+      {negociacao.valor_negociado != null && (
+        <p className="text-sm font-semibold" style={{ color: "var(--accent)" }}>
+          {negociacao.valor_negociado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </p>
+      )}
+      {negociacao.status === "escolhida" && negociacao.justificativa_escolha && (
+        <p className="text-[12px] text-muted-foreground italic">Justificativa: {negociacao.justificativa_escolha}</p>
+      )}
+      {negociacao.status === "descartada" && (
+        <p className="text-[12px] text-muted-foreground flex items-center gap-1">
+          <Ban className="size-3" /> Não escolhida, mantida no histórico
+        </p>
+      )}
+      {!podeEditar && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Lock className="size-3" /> Cadastro travado, já foi decidido
+        </p>
+      )}
+      <div className="flex gap-2 flex-wrap">
+        {podeEditar && (
+          <Button size="sm" variant="outline" className="h-8" onClick={() => setEditando(true)}>
+            <Pencil className="size-3.5 mr-1" /> Editar
+          </Button>
+        )}
+        <EscolherFornecedor negociacao={negociacao} solicitacaoId={solicitacaoId} onDone={onChange} />
+      </div>
+    </div>
+  );
+}
+
+function NovoFornecedorSection({ solicitacaoId, onCreated }: { solicitacaoId: string; onCreated: () => void }) {
+  const [open, setOpen] = React.useState(false);
+
+  const createMut = useMutation({
+    mutationFn: async ({ v, dataTermino }: { v: FornecedorFormValues; dataTermino: string | null }) => {
+      const { error } = await supabase.from("negociacoes").insert({ solicitacao_id: solicitacaoId, ...valuesParaLinhaDb(v, dataTermino) });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setOpen(false);
+      onCreated();
+    },
+  });
+
+  if (!open) {
+    return (
+      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm bg-primary text-primary-foreground">
+        <Plus className="size-4 mr-1" /> Cadastrar empresa participante
+      </Button>
+    );
+  }
+
+  return (
+    <FornecedorForm
+      initial={null}
+      submitLabel="Cadastrar"
+      submitting={createMut.isPending}
+      onCancel={() => setOpen(false)}
+      onSubmit={(v, dataTermino) => createMut.mutate({ v, dataTermino })}
+    />
+  );
+}
+
 function NegociacaoPage() {
   const { produto, empresa: empresaSlug, id } = Route.useParams();
   useEmpresa();
@@ -484,11 +620,11 @@ function NegociacaoPage() {
       <main className="max-w-3xl mx-auto px-5 py-6 space-y-4">
         <h1 className="text-xl font-semibold">Negociação Comercial</h1>
         <p className="text-sm text-muted-foreground">
-          Cadastre as empresas participantes da licitação. Quando decidir, escolha uma delas: as demais ficam registradas como
-          descartadas, sem perder o histórico de quem participou.
+          Cadastre as empresas participantes da licitação. Enquanto uma empresa estiver "Participante", os dados podem ser editados;
+          depois de escolhida ou descartada, o cadastro fica travado, pra manter o histórico fiel à decisão tomada.
         </p>
 
-        <NovoFornecedorForm solicitacaoId={id} onCreated={invalidate} />
+        <NovoFornecedorSection solicitacaoId={id} onCreated={invalidate} />
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -497,33 +633,7 @@ function NegociacaoPage() {
         ) : (
           <div className="space-y-3">
             {negociacoes.map((n) => (
-              <div key={n.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    {n.tipo_pessoa === "fisica" ? <User className="size-3.5 text-muted-foreground" /> : <Building2 className="size-3.5 text-muted-foreground" />}
-                    <span className="text-sm font-medium">{n.fornecedor_nome}</span>
-                  </div>
-                  <StatusBadge status={n.status} />
-                </div>
-                <p className="text-[12px] text-muted-foreground font-mono">{formatDocumento(n.fornecedor_documento, n.tipo_pessoa)}</p>
-                {n.objeto_contrato && <p className="text-[13px]">{n.objeto_contrato}</p>}
-                {n.valor_negociado != null && (
-                  <p className="text-sm font-semibold" style={{ color: "var(--accent)" }}>
-                    {n.valor_negociado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  </p>
-                )}
-                {n.status === "escolhida" && n.justificativa_escolha && (
-                  <p className="text-[12px] text-muted-foreground italic">Justificativa: {n.justificativa_escolha}</p>
-                )}
-                {n.status === "descartada" && (
-                  <p className="text-[12px] text-muted-foreground flex items-center gap-1">
-                    <Ban className="size-3" /> Não escolhida, mantida no histórico
-                  </p>
-                )}
-                <div>
-                  <EscolherFornecedor negociacao={n} solicitacaoId={id} onDone={invalidate} />
-                </div>
-              </div>
+              <NegociacaoCard key={n.id} negociacao={n} solicitacaoId={id} onChange={invalidate} />
             ))}
           </div>
         )}
