@@ -12,6 +12,7 @@ const WIDTH = 595;
 const HEIGHT = 842;
 const MARGIN = 56;
 const FONT_SIZE_BODY = 11;
+const FONT_SIZE_SECTION = 12.5;
 const FONT_SIZE_TITLE = 15;
 const LINE_HEIGHT = 15;
 const MAX_CHARS_PER_LINE = 92;
@@ -48,28 +49,40 @@ function wrapLine(line: string, maxChars: number): string[] {
   return out;
 }
 
-function isHeading(line: string): boolean {
+type NivelLinha = "titulo" | "secao" | "rotulo" | "corpo";
+
+/**
+ * Classifica a linha pra decidir fonte e tamanho:
+ * - "secao": cabeçalho numerado, ex "1. AS PARTES"
+ * - "rotulo": linha curta em maiúsculas que é um campo do bloco de assinatura,
+ *   ex "CONTRATANTE:", "CPF:". Fica em negrito, mas no tamanho do corpo, senão
+ *   um "CPF:" acaba parecendo título de seção.
+ * - "corpo": o resto
+ */
+function classificarLinha(line: string): NivelLinha {
   const t = line.trim();
-  if (!t) return false;
-  return /^\d+\.\s/.test(t) || (t === t.toUpperCase() && /[A-ZÀ-Ú]/.test(t) && t.length < 60);
+  if (!t) return "corpo";
+  if (/^\d+\.\s/.test(t)) return "secao";
+  if (t === t.toUpperCase() && /[A-ZÀ-Ú]/.test(t) && t.length < 60) return "rotulo";
+  return "corpo";
 }
 
 interface Linha {
   texto: string;
-  negrito: boolean;
+  nivel: NivelLinha;
 }
 
 /** Gera um PDF simples (texto + negrito de título/cabeçalho + paginação automática), sem dependências. */
 export function gerarPdfSimples(titulo: string, corpo: string): Uint8Array {
-  const linhas: Linha[] = [{ texto: titulo, negrito: true }, { texto: "", negrito: false }];
+  const linhas: Linha[] = [{ texto: titulo, nivel: "titulo" }, { texto: "", nivel: "corpo" }];
   for (const p of corpo.split("\n")) {
     if (p.trim() === "") {
-      linhas.push({ texto: "", negrito: false });
+      linhas.push({ texto: "", nivel: "corpo" });
       continue;
     }
-    const negrito = isHeading(p);
+    const nivel = classificarLinha(p);
     for (const parte of wrapLine(p, MAX_CHARS_PER_LINE)) {
-      linhas.push({ texto: parte, negrito });
+      linhas.push({ texto: parte, nivel });
     }
   }
 
@@ -123,8 +136,9 @@ export function gerarPdfSimples(titulo: string, corpo: string): Uint8Array {
     let y = HEIGHT - MARGIN;
     let stream = "BT\n";
     for (const linha of paginas[i]) {
-      const font = linha.negrito ? "F2" : "F1";
-      const size = linha.negrito ? FONT_SIZE_TITLE : FONT_SIZE_BODY;
+      const font = linha.nivel === "corpo" ? "F1" : "F2";
+      const size =
+        linha.nivel === "titulo" ? FONT_SIZE_TITLE : linha.nivel === "secao" ? FONT_SIZE_SECTION : FONT_SIZE_BODY;
       const texto = escapePdfLiteral(toWinAnsiString(linha.texto));
       stream += `/${font} ${size} Tf\n1 0 0 1 ${MARGIN} ${y} Tm\n(${texto}) Tj\n`;
       y -= LINE_HEIGHT;
