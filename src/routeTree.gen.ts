@@ -22,6 +22,8 @@ import { Route as ProdutoEmpresaContratosRouteImport } from './routes/$produto.$
 import { Route as ProdutoEmpresaContratosIdRouteImport } from './routes/$produto.$empresa.contratos.$id'
 import { Route as ProdutoEmpresaSolicitacoesIdRouteImport } from './routes/$produto.$empresa.solicitacoes.$id'
 import { Route as ProdutoEmpresaNegociacaoIdRouteImport } from './routes/$produto.$empresa.negociacao.$id'
+import { Route as ProdutoEmpresaContratoIdRouteImport } from './routes/$produto.$empresa.contrato.$id'
+import { Route as AprovacaoTokenRouteImport } from './routes/aprovacao.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -92,6 +94,17 @@ const ProdutoEmpresaNegociacaoIdRoute =
     path: '/negociacao/$id',
     getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
+const ProdutoEmpresaContratoIdRoute =
+  ProdutoEmpresaContratoIdRouteImport.update({
+    id: '/contrato/$id',
+    path: '/contrato/$id',
+    getParentRoute: () => ProdutoEmpresaRoute,
+  } as any)
+const AprovacaoTokenRoute = AprovacaoTokenRouteImport.update({
+  id: '/aprovacao/$token',
+  path: '/aprovacao/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,6 +120,8 @@ export interface FileRoutesByFullPath {
   '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
   '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
   '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
+  '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
+  '/aprovacao/$token': typeof AprovacaoTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -120,6 +135,8 @@ export interface FileRoutesByTo {
   '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
   '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
   '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
+  '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
+  '/aprovacao/$token': typeof AprovacaoTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -136,6 +153,8 @@ export interface FileRoutesById {
   '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
   '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
   '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
+  '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
+  '/aprovacao/$token': typeof AprovacaoTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -153,6 +172,8 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
     | '/$produto/$empresa/negociacao/$id'
+    | '/$produto/$empresa/contrato/$id'
+    | '/aprovacao/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +187,8 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
     | '/$produto/$empresa/negociacao/$id'
+    | '/$produto/$empresa/contrato/$id'
+    | '/aprovacao/$token'
   id:
     | '__root__'
     | '/'
@@ -181,6 +204,8 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/contratos/$id'
     | '/$produto/$empresa/solicitacoes/$id'
     | '/$produto/$empresa/negociacao/$id'
+    | '/$produto/$empresa/contrato/$id'
+    | '/aprovacao/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -188,6 +213,7 @@ export interface RootRouteChildren {
   ProdutoRoute: typeof ProdutoRouteWithChildren
   AuthRoute: typeof AuthRoute
   SuperadminRoute: typeof SuperadminRoute
+  AprovacaoTokenRoute: typeof AprovacaoTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -283,6 +309,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoEmpresaNegociacaoIdRouteImport
       parentRoute: typeof ProdutoEmpresaRoute
     }
+    '/$produto/$empresa/contrato/$id': {
+      id: '/$produto/$empresa/contrato/$id'
+      path: '/contrato/$id'
+      fullPath: '/$produto/$empresa/contrato/$id'
+      preLoaderRoute: typeof ProdutoEmpresaContratoIdRouteImport
+      parentRoute: typeof ProdutoEmpresaRoute
+    }
+    '/aprovacao/$token': {
+      id: '/aprovacao/$token'
+      path: '/aprovacao/$token'
+      fullPath: '/aprovacao/$token'
+      preLoaderRoute: typeof AprovacaoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -307,6 +347,7 @@ interface ProdutoEmpresaRouteChildren {
   ProdutoEmpresaIndexRoute: typeof ProdutoEmpresaIndexRoute
   ProdutoEmpresaSolicitacoesIdRoute: typeof ProdutoEmpresaSolicitacoesIdRoute
   ProdutoEmpresaNegociacaoIdRoute: typeof ProdutoEmpresaNegociacaoIdRoute
+  ProdutoEmpresaContratoIdRoute: typeof ProdutoEmpresaContratoIdRoute
 }
 
 const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
@@ -316,6 +357,7 @@ const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
   ProdutoEmpresaIndexRoute: ProdutoEmpresaIndexRoute,
   ProdutoEmpresaSolicitacoesIdRoute: ProdutoEmpresaSolicitacoesIdRoute,
   ProdutoEmpresaNegociacaoIdRoute: ProdutoEmpresaNegociacaoIdRoute,
+  ProdutoEmpresaContratoIdRoute: ProdutoEmpresaContratoIdRoute,
 }
 
 const ProdutoEmpresaRouteWithChildren = ProdutoEmpresaRoute._addFileChildren(
@@ -340,6 +382,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoRoute: ProdutoRouteWithChildren,
   AuthRoute: AuthRoute,
   SuperadminRoute: SuperadminRoute,
+  AprovacaoTokenRoute: AprovacaoTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
