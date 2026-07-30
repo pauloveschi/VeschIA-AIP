@@ -111,7 +111,16 @@ function somarDias(dataInicioISO: string, dias: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function useNegociacoes(solicitacaoId: string) {
+/**
+ * Calcula a data de término que vai no contrato.
+ * Regra: quando a vigência é maior que 30 dias, subtrai 30 dias pra sobrar tempo de negociar
+ * renovação ou aditivo antes do fim real. Em contratos curtos (30 dias ou menos) não dá pra
+ * subtrair, senão o término cairia no mesmo dia do início (ou antes), então usa a vigência cheia.
+ */
+function calcularDataTermino(dataInicioISO: string, vigenciaDias: number): string {
+  const diasEfetivos = vigenciaDias > 30 ? vigenciaDias - 30 : vigenciaDias;
+  return somarDias(dataInicioISO, diasEfetivos);
+}
   return useQuery({
     queryKey: ["negociacoes", solicitacaoId],
     queryFn: async (): Promise<Negociacao[]> => {
@@ -248,7 +257,7 @@ function FornecedorForm({
 
   const set = <K extends keyof FornecedorFormValues>(k: K, val: FornecedorFormValues[K]) => setV((prev) => ({ ...prev, [k]: val }));
 
-  const dataTermino = v.dataInicio && v.vigenciaDias ? somarDias(v.dataInicio, Number(v.vigenciaDias) - 30) : null;
+  const dataTermino = v.dataInicio && v.vigenciaDias ? calcularDataTermino(v.dataInicio, Number(v.vigenciaDias)) : null;
 
   const buscarCep = async () => {
     const digits = onlyDigits(v.cep);
@@ -356,7 +365,9 @@ function FornecedorForm({
       </div>
       {dataTermino && (
         <p className="text-[12px] text-muted-foreground">
-          Data de término no contrato (já com os 30 dias de antecedência pra renovação): <strong>{new Date(dataTermino + "T00:00:00").toLocaleDateString("pt-BR")}</strong>
+          Data de término no contrato
+          {Number(v.vigenciaDias) > 30 ? " (já com os 30 dias de antecedência pra renovação)" : " (vigência curta, sem os 30 dias de antecedência)"}:{" "}
+          <strong>{new Date(dataTermino + "T00:00:00").toLocaleDateString("pt-BR")}</strong>
         </p>
       )}
 
