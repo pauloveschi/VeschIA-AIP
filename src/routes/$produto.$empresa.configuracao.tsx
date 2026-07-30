@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus, Sparkles, User, Cog, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronLeft, Plus, Sparkles, User, Cog, Trash2, ChevronUp, ChevronDown, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/configuracao")({
   component: ConfiguracaoPage,
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/$produto/$empresa/configuracao")({
 interface Papel {
   id: string;
   nome: string;
+  email: string | null;
 }
 
 interface EtapaConfig {
@@ -32,7 +33,7 @@ function usePapeis(empresaId: string) {
   return useQuery({
     queryKey: ["papeis", empresaId],
     queryFn: async (): Promise<Papel[]> => {
-      const { data, error } = await supabase.from("papeis_empresa").select("id, nome").eq("empresa_id", empresaId);
+      const { data, error } = await supabase.from("papeis_empresa").select("id, nome, email").eq("empresa_id", empresaId);
       if (error) throw error;
       return data ?? [];
     },
@@ -187,19 +188,28 @@ function FaseRow({
 function NovoPapelForm({ empresaId }: { empresaId: string }) {
   const qc = useQueryClient();
   const [nome, setNome] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const createMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("papeis_empresa").insert({ empresa_id: empresaId, nome });
+      const { error } = await supabase.from("papeis_empresa").insert({ empresa_id: empresaId, nome, email: email || null });
       if (error) throw error;
     },
     onSuccess: () => {
       setNome("");
+      setEmail("");
       qc.invalidateQueries({ queryKey: ["papeis", empresaId] });
     },
   });
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 flex-wrap">
       <Input placeholder="Nome do papel (ex: SSMA)" value={nome} onChange={(e) => setNome(e.target.value)} className="h-9 max-w-xs" />
+      <Input
+        type="email"
+        placeholder="E-mail de aviso (opcional)"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="h-9 max-w-xs"
+      />
       <Button size="sm" disabled={!nome || createMut.isPending} onClick={() => createMut.mutate()} variant="outline">
         <Plus className="size-4 mr-1" /> Adicionar papel
       </Button>
@@ -211,6 +221,8 @@ function NovoPapelForm({ empresaId }: { empresaId: string }) {
 function PapelChip({ papel, empresaId }: { papel: Papel; empresaId: string }) {
   const qc = useQueryClient();
   const [erro, setErro] = React.useState<string | null>(null);
+  const [editando, setEditando] = React.useState(false);
+  const [email, setEmail] = React.useState(papel.email ?? "");
 
   const excluirMut = useMutation({
     mutationFn: async () => {
@@ -228,9 +240,49 @@ function PapelChip({ papel, empresaId }: { papel: Papel; empresaId: string }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["papeis", empresaId] }),
   });
 
+  const salvarEmailMut = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("papeis_empresa").update({ email: email || null }).eq("id", papel.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditando(false);
+      qc.invalidateQueries({ queryKey: ["papeis", empresaId] });
+    },
+  });
+
+  if (editando) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-secondary">
+        <User className="size-3" /> {papel.nome}
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="e-mail de aviso"
+          className="h-7 text-xs w-52"
+        />
+        <button onClick={() => salvarEmailMut.mutate()} disabled={salvarEmailMut.isPending} className="text-accent font-medium">
+          Salvar
+        </button>
+        <button onClick={() => { setEmail(papel.email ?? ""); setEditando(false); }} className="text-muted-foreground">
+          Cancelar
+        </button>
+      </span>
+    );
+  }
+
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-secondary group">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-secondary">
       <User className="size-3" /> {papel.nome}
+      {papel.email ? (
+        <span className="text-muted-foreground">· {papel.email}</span>
+      ) : (
+        <span className="text-muted-foreground italic">· sem e-mail</span>
+      )}
+      <button onClick={() => setEditando(true)} title="Definir e-mail de aviso" className="text-muted-foreground hover:text-foreground">
+        <Mail className="size-3" />
+      </button>
       <button
         onClick={() => { setErro(null); excluirMut.mutate(); }}
         disabled={excluirMut.isPending}
