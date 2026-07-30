@@ -228,6 +228,7 @@ function SolicitacaoDetailPage() {
               const isIa = etapa.configuracao_fluxo.responsavel_tipo === "ia";
               const isSistema = etapa.configuracao_fluxo.responsavel_tipo === "sistema";
               const isNegociacao = etapa.configuracao_fluxo.nome_etapa === "Negociação Comercial";
+              const isElaboracaoContrato = etapa.configuracao_fluxo.nome_etapa === "Elaboração do Contrato";
               const isPendente = etapa.status === "pendente";
               const bg =
                 etapa.status === "aprovada" ? "var(--ops-aprovada)" : etapa.status === "rejeitada" ? "var(--ops-rejeitada)" : "var(--muted)";
@@ -264,7 +265,18 @@ function SolicitacaoDetailPage() {
                       </Button>
                     </Link>
                   )}
-                  {isPendente && !isIa && !isSistema && !isNegociacao && (
+                  {isElaboracaoContrato && isPendente && (
+                    <Link
+                      to="/$produto/$empresa/contrato/$id"
+                      params={{ produto, empresa: empresaSlug, id }}
+                      className="shrink-0"
+                    >
+                      <Button size="sm" className="h-8 bg-primary text-primary-foreground">
+                        Elaborar contrato <ArrowUpRight className="size-3.5 ml-1" />
+                      </Button>
+                    </Link>
+                  )}
+                  {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && (
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" className="h-8 text-destructive border-destructive/30" onClick={() => decidir.mutate({ etapaId: etapa.id, status: "rejeitada" })}>
                         Rejeitar
