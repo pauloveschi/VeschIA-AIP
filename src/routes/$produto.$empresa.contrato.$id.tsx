@@ -34,8 +34,18 @@ function formatarDocumento(doc: string, tipoPessoa: string): string {
 function limparTextoGerado(texto: string): string {
   let t = texto.trim();
   t = t.replace(/^CONTRATO DE PRESTA[ÇC][ÃA]O DE SERVI[ÇC]OS\s*\n+/i, "");
-  t = t.replace(/([^\n])(Por estarem de acordo)/g, "$1\n\n$2");
+  // pega qualquer ponto final grudado na palavra seguinte (erro comum do modelo),
+  // sem quebrar valores em reais, siglas tipo "S.A." ou datas numéricas
+  t = t.replace(/([a-zà-úâ-ûã-õç])\.([A-ZÀ-Ú])/g, "$1.\n\n$2");
   return t.trim();
+}
+
+
+/** Formata CEP (8 dígitos) como 00000-000. */
+function formatarCep(cep: string | null | undefined): string | null {
+  if (!cep) return null;
+  const d = cep.replace(/\D/g, "");
+  return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : cep;
 }
 
 function enderecoCompleto(parts: {
@@ -50,7 +60,7 @@ function enderecoCompleto(parts: {
   const linha1 = [parts.logradouro, parts.numero].filter(Boolean).join(", ");
   const linha2 = [parts.complemento, parts.bairro].filter(Boolean).join(", ");
   const linha3 = [parts.cidade, parts.estado].filter(Boolean).join(" - ");
-  return [linha1, linha2, linha3, parts.cep ? `CEP ${parts.cep}` : null].filter(Boolean).join(", ") || "(endereço não informado)";
+  return [linha1, linha2, linha3, parts.cep ? `CEP ${formatarCep(parts.cep)}` : null].filter(Boolean).join(", ") || "(endereço não informado)";
 }
 
 function montarPrompt(input: {
@@ -108,7 +118,25 @@ RESCISÃO E MULTA (use exatamente estes valores, não escreva "a definir" nesta 
 
 FORO: eleja o foro da comarca da cidade onde o CONTRATANTE está localizado, que é ${input.contratanteCidade && input.contratanteEstado ? `${input.contratanteCidade} - ${input.contratanteEstado}` : "a definir (cidade do contratante não cadastrada)"}. Escreva no formato "foro da Comarca de Cidade - UF".
 
-Ao final, inclua a formalização padrão ("Por estarem de acordo, assinam este documento em 2 (duas) vias de igual teor") e os campos de assinatura: CONTRATANTE, CONTRATADA, TESTEMUNHA CONTRATANTE, TESTEMUNHA CONTRATADA.
+Ao final, inclua a formalização padrão ("Por estarem de acordo, assinam este documento em 2 (duas) vias de igual teor") e o bloco de assinaturas no formato abaixo, mantendo as linhas de sublinhado e os campos Nome/CPF das testemunhas:
+
+CONTRATANTE:
+___________________________________
+(nome do contratante)
+
+CONTRATADA:
+___________________________________
+(nome do contratado)
+
+TESTEMUNHA CONTRATANTE:
+___________________________________
+Nome:
+CPF:
+
+TESTEMUNHA CONTRATADA:
+___________________________________
+Nome:
+CPF:
 
 Escreva em português correto, revisando a grafia de cada palavra antes de responder (atenção especial a termos jurídicos como "parte infratora", "multa moratória", "rescisão").
 
