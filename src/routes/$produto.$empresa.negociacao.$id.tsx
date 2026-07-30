@@ -121,6 +121,8 @@ function calcularDataTermino(dataInicioISO: string, vigenciaDias: number): strin
   const diasEfetivos = vigenciaDias > 30 ? vigenciaDias - 30 : vigenciaDias;
   return somarDias(dataInicioISO, diasEfetivos);
 }
+
+function useNegociacoes(solicitacaoId: string) {
   return useQuery({
     queryKey: ["negociacoes", solicitacaoId],
     queryFn: async (): Promise<Negociacao[]> => {
