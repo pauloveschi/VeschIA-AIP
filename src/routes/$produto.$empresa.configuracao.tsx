@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus, Sparkles, User, Cog } from "lucide-react";
+import { ChevronLeft, Plus, Sparkles, User, Cog, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/configuracao")({
   component: ConfiguracaoPage,
@@ -121,11 +121,7 @@ function FasesSection({ empresaId, produto }: { empresaId: string; produto: stri
       ) : (
         <div className="flex flex-col gap-2 mb-3">
           {fases.map((f) => (
-            <div key={f.id} className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !f.ativo && "opacity-50")}>
-              <span className="text-xs text-muted-foreground w-5">{f.ordem}</span>
-              <span className="flex-1 text-sm">{f.nome_fase}</span>
-              <Switch checked={f.ativo} onCheckedChange={(v) => toggleAtivoMut.mutate({ id: f.id, ativo: v })} />
-            </div>
+            <FaseRow key={f.id} fase={f} empresaId={empresaId} produto={produto} onToggleAtivo={(ativo) => toggleAtivoMut.mutate({ id: f.id, ativo })} />
           ))}
         </div>
       )}
@@ -137,6 +133,54 @@ function FasesSection({ empresaId, produto }: { empresaId: string; produto: stri
       </div>
       {criarFaseMut.isError && <p className="text-xs text-destructive mt-2">{(criarFaseMut.error as Error).message}</p>}
     </section>
+  );
+}
+
+
+function FaseRow({
+  fase,
+  empresaId,
+  produto,
+  onToggleAtivo,
+}: {
+  fase: FaseConfig;
+  empresaId: string;
+  produto: string;
+  onToggleAtivo: (ativo: boolean) => void;
+}) {
+  const qc = useQueryClient();
+  const [erro, setErro] = React.useState<string | null>(null);
+
+  const excluirMut = useMutation({
+    mutationFn: async () => {
+      const [{ count: usoSolicitacao }, { count: usoContrato }] = await Promise.all([
+        supabase.from("solicitacoes").select("id", { count: "exact", head: true }).eq("fase_id", fase.id),
+        supabase.from("contratos").select("id", { count: "exact", head: true }).eq("fase_atual_id", fase.id),
+      ]);
+      if ((usoSolicitacao ?? 0) > 0 || (usoContrato ?? 0) > 0) {
+        throw new Error("Impossível excluir, já em uso");
+      }
+      const { error } = await supabase.from("fases_config").delete().eq("id", fase.id);
+      if (error) throw error;
+    },
+    onError: (e: Error) => setErro(e.message),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fases-config", empresaId, produto] }),
+  });
+
+  return (
+    <div className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !fase.ativo && "opacity-50")}>
+      <span className="text-xs text-muted-foreground w-5">{fase.ordem}</span>
+      <span className="flex-1 text-sm">{fase.nome_fase}</span>
+      {erro && <span className="text-[11px] text-destructive">{erro}</span>}
+      <Switch checked={fase.ativo} onCheckedChange={onToggleAtivo} />
+      <button
+        onClick={() => { setErro(null); excluirMut.mutate(); }}
+        disabled={excluirMut.isPending}
+        className="text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
+    </div>
   );
 }
 
@@ -160,6 +204,43 @@ function NovoPapelForm({ empresaId }: { empresaId: string }) {
         <Plus className="size-4 mr-1" /> Adicionar papel
       </Button>
     </div>
+  );
+}
+
+
+function PapelChip({ papel, empresaId }: { papel: Papel; empresaId: string }) {
+  const qc = useQueryClient();
+  const [erro, setErro] = React.useState<string | null>(null);
+
+  const excluirMut = useMutation({
+    mutationFn: async () => {
+      const [{ count: usoExecucao }, { count: usoMembro }] = await Promise.all([
+        supabase.from("etapas_execucao").select("id", { count: "exact", head: true }).eq("papel_resolvido_id", papel.id),
+        supabase.from("membros").select("id", { count: "exact", head: true }).eq("papel_id", papel.id),
+      ]);
+      if ((usoExecucao ?? 0) > 0 || (usoMembro ?? 0) > 0) {
+        throw new Error("Impossível excluir, já em uso");
+      }
+      const { error } = await supabase.from("papeis_empresa").delete().eq("id", papel.id);
+      if (error) throw error;
+    },
+    onError: (e: Error) => setErro(e.message),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["papeis", empresaId] }),
+  });
+
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-secondary group">
+      <User className="size-3" /> {papel.nome}
+      <button
+        onClick={() => { setErro(null); excluirMut.mutate(); }}
+        disabled={excluirMut.isPending}
+        title={erro ?? "Excluir papel"}
+        className="text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="size-3" />
+      </button>
+      {erro && <span className="text-destructive text-[10px]">{erro}</span>}
+    </span>
   );
 }
 
@@ -234,6 +315,93 @@ function NovaEtapaForm({ empresaId, produto, papeis, proximaOrdem }: { empresaId
   );
 }
 
+
+function EtapaRow({
+  etapa,
+  empresaId,
+  produto,
+  etapaAnterior,
+  etapaSeguinte,
+  onToggleAtivo,
+}: {
+  etapa: EtapaConfig;
+  empresaId: string;
+  produto: string;
+  etapaAnterior: EtapaConfig | null;
+  etapaSeguinte: EtapaConfig | null;
+  onToggleAtivo: (ativo: boolean) => void;
+}) {
+  const qc = useQueryClient();
+  const [erro, setErro] = React.useState<string | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["etapas-config", empresaId, produto] });
+
+  // Troca a "ordem" com a etapa vizinha (não precisa de coluna nova, é só swap dos valores já existentes).
+  const moverMut = useMutation({
+    mutationFn: async (vizinha: EtapaConfig) => {
+      const { error: e1 } = await supabase.from("configuracao_fluxo").update({ ordem: vizinha.ordem }).eq("id", etapa.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("configuracao_fluxo").update({ ordem: etapa.ordem }).eq("id", vizinha.id);
+      if (e2) throw e2;
+    },
+    onSuccess: invalidate,
+  });
+
+  const excluirMut = useMutation({
+    mutationFn: async () => {
+      const { count } = await supabase
+        .from("etapas_execucao")
+        .select("id", { count: "exact", head: true })
+        .eq("configuracao_fluxo_id", etapa.id);
+      if ((count ?? 0) > 0) throw new Error("Impossível excluir, já em uso");
+      const { error } = await supabase.from("configuracao_fluxo").delete().eq("id", etapa.id);
+      if (error) throw error;
+    },
+    onError: (e: Error) => setErro(e.message),
+    onSuccess: invalidate,
+  });
+
+  return (
+    <div className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !etapa.ativo && "opacity-50")}>
+      <div className="flex flex-col -my-1">
+        <button
+          disabled={!etapaAnterior || moverMut.isPending}
+          onClick={() => etapaAnterior && moverMut.mutate(etapaAnterior)}
+          className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+        >
+          <ChevronUp className="size-3.5" />
+        </button>
+        <button
+          disabled={!etapaSeguinte || moverMut.isPending}
+          onClick={() => etapaSeguinte && moverMut.mutate(etapaSeguinte)}
+          className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+        >
+          <ChevronDown className="size-3.5" />
+        </button>
+      </div>
+      <span className="text-xs text-muted-foreground w-5">{etapa.ordem}</span>
+      {etapa.responsavel_tipo === "ia" ? (
+        <Sparkles className="size-4 text-accent shrink-0" />
+      ) : etapa.responsavel_tipo === "sistema" ? (
+        <Cog className="size-4 text-muted-foreground shrink-0" />
+      ) : (
+        <User className="size-4 text-muted-foreground shrink-0" />
+      )}
+      <span className="flex-1 text-sm">{etapa.nome_etapa}</span>
+      {!etapa.obrigatoria && <span className="text-[11px] text-muted-foreground">opcional</span>}
+      {erro && <span className="text-[11px] text-destructive">{erro}</span>}
+      <Switch checked={etapa.ativo} onCheckedChange={onToggleAtivo} />
+      <button
+        onClick={() => { setErro(null); excluirMut.mutate(); }}
+        disabled={excluirMut.isPending}
+        className="text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
 function ConfiguracaoPage() {
   const empresa = useEmpresa();
   const produto = useProdutoAtual();
@@ -289,9 +457,7 @@ function ConfiguracaoPage() {
           <h2 className="text-sm font-semibold mb-2">Papéis internos</h2>
           <div className="flex flex-wrap gap-2 mb-3">
             {papeis.map((p) => (
-              <span key={p.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-secondary">
-                <User className="size-3" /> {p.nome}
-              </span>
+              <PapelChip key={p.id} papel={p} empresaId={empresa.id} />
             ))}
           </div>
           <NovoPapelForm empresaId={empresa.id} />
@@ -303,20 +469,16 @@ function ConfiguracaoPage() {
             <p className="text-sm text-muted-foreground">Carregando…</p>
           ) : (
             <div className="flex flex-col gap-2 mb-3">
-              {etapas.map((etapa) => (
-                <div key={etapa.id} className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3", !etapa.ativo && "opacity-50")}>
-                  <span className="text-xs text-muted-foreground w-5">{etapa.ordem}</span>
-                  {etapa.responsavel_tipo === "ia" ? (
-                    <Sparkles className="size-4 text-accent shrink-0" />
-                  ) : etapa.responsavel_tipo === "sistema" ? (
-                    <Cog className="size-4 text-muted-foreground shrink-0" />
-                  ) : (
-                    <User className="size-4 text-muted-foreground shrink-0" />
-                  )}
-                  <span className="flex-1 text-sm">{etapa.nome_etapa}</span>
-                  {!etapa.obrigatoria && <span className="text-[11px] text-muted-foreground">opcional</span>}
-                  <Switch checked={etapa.ativo} onCheckedChange={(v) => toggleAtivoMut.mutate({ id: etapa.id, ativo: v })} />
-                </div>
+              {etapas.map((etapa, index) => (
+                <EtapaRow
+                  key={etapa.id}
+                  etapa={etapa}
+                  empresaId={empresa.id}
+                  produto={produto}
+                  etapaAnterior={index > 0 ? etapas[index - 1] : null}
+                  etapaSeguinte={index < etapas.length - 1 ? etapas[index + 1] : null}
+                  onToggleAtivo={(ativo) => toggleAtivoMut.mutate({ id: etapa.id, ativo })}
+                />
               ))}
             </div>
           )}

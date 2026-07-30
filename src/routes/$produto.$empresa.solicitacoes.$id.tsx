@@ -224,12 +224,23 @@ function SolicitacaoDetailPage() {
           {etapas.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhuma etapa de aprovação configurada pra esse produto ainda.</p>
           ) : (
-            etapas.map((etapa) => {
+            etapas.map((etapa, index) => {
               const isIa = etapa.configuracao_fluxo.responsavel_tipo === "ia";
               const isSistema = etapa.configuracao_fluxo.responsavel_tipo === "sistema";
               const isNegociacao = etapa.configuracao_fluxo.nome_etapa === "Negociação Comercial";
               const isElaboracaoContrato = etapa.configuracao_fluxo.nome_etapa === "Elaboração do Contrato";
               const isPendente = etapa.status === "pendente";
+              // Só trava a fila entre etapas que dependem de decisão humana (tipo "papel" e
+              // obrigatórias). Etapas automáticas (sistema/ia) ainda não têm rotina própria
+              // pra fechar sozinhas, então não fazem sentido travar quem vem depois delas ainda.
+              const etapaAnteriorPendente = etapas
+                .slice(0, index)
+                .some(
+                  (anterior) =>
+                    anterior.configuracao_fluxo.responsavel_tipo === "papel" &&
+                    anterior.configuracao_fluxo.obrigatoria &&
+                    anterior.status !== "aprovada",
+                );
               const bg =
                 etapa.status === "aprovada" ? "var(--ops-aprovada)" : etapa.status === "rejeitada" ? "var(--ops-rejeitada)" : "var(--muted)";
               const nomeResponsavel = etapa.papel_resolvido?.nome ?? etapa.configuracao_fluxo.papeis_empresa?.nome ?? null;
@@ -252,6 +263,7 @@ function SolicitacaoDetailPage() {
                     <p className="text-[12px] text-muted-foreground">
                       {isIa ? "Responsável: IA" : isSistema ? "Automático" : `Responsável: ${nomeResponsavel ?? "não definido"}`}
                       {!etapa.configuracao_fluxo.obrigatoria && " · opcional"}
+                      {isPendente && etapaAnteriorPendente && " · aguardando etapa anterior"}
                     </p>
                   </div>
                   {isNegociacao && isPendente && (
@@ -278,10 +290,21 @@ function SolicitacaoDetailPage() {
                   )}
                   {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && (
                     <div className="flex gap-2 shrink-0">
-                      <Button size="sm" variant="outline" className="h-8 text-destructive border-destructive/30" onClick={() => decidir.mutate({ etapaId: etapa.id, status: "rejeitada" })}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-destructive border-destructive/30"
+                        disabled={etapaAnteriorPendente}
+                        onClick={() => decidir.mutate({ etapaId: etapa.id, status: "rejeitada" })}
+                      >
                         Rejeitar
                       </Button>
-                      <Button size="sm" className="h-8 bg-primary text-primary-foreground" onClick={() => decidir.mutate({ etapaId: etapa.id, status: "aprovada" })}>
+                      <Button
+                        size="sm"
+                        className="h-8 bg-primary text-primary-foreground"
+                        disabled={etapaAnteriorPendente}
+                        onClick={() => decidir.mutate({ etapaId: etapa.id, status: "aprovada" })}
+                      >
                         Aprovar
                       </Button>
                     </div>
