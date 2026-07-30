@@ -41,6 +41,15 @@ function limparTextoGerado(texto: string): string {
 }
 
 
+
+/** Monta a linha de local e data do contrato, ex: "Fortaleza - CE, 30 de julho de 2026". */
+function montarLocalData(cidade: string | null, estado: string | null): string {
+  const hoje = new Date();
+  const data = hoje.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+  const local = cidade && estado ? `${cidade} - ${estado}` : "(cidade do contratante não cadastrada)";
+  return `${local}, ${data}`;
+}
+
 /** Formata CEP (8 dígitos) como 00000-000. */
 function formatarCep(cep: string | null | undefined): string | null {
   if (!cep) return null;
@@ -85,6 +94,7 @@ function montarPrompt(input: {
   dataInicio: string | null;
   dataTermino: string | null;
   vigenciaDias: number | null;
+  localData: string;
 }): string {
   return `Você é um assistente jurídico que redige minutas de Contrato de Prestação de Serviços em português do Brasil, seguindo EXATAMENTE a estrutura de seções abaixo (não invente seções novas, não remova nenhuma das 6):
 
@@ -118,15 +128,15 @@ RESCISÃO E MULTA (use exatamente estes valores, não escreva "a definir" nesta 
 
 FORO: eleja o foro da comarca da cidade onde o CONTRATANTE está localizado, que é ${input.contratanteCidade && input.contratanteEstado ? `${input.contratanteCidade} - ${input.contratanteEstado}` : "a definir (cidade do contratante não cadastrada)"}. Escreva no formato "foro da Comarca de Cidade - UF".
 
-Ao final, inclua a formalização padrão ("Por estarem de acordo, assinam este documento em 2 (duas) vias de igual teor") e o bloco de assinaturas no formato abaixo, mantendo as linhas de sublinhado e os campos Nome/CPF das testemunhas:
+Ao final, inclua a formalização padrão ("Por estarem de acordo, assinam este documento em 2 (duas) vias de igual teor"), depois uma linha isolada com local e data exatamente assim: "${input.localData}", e então o bloco de assinaturas no formato abaixo, mantendo as linhas de sublinhado e os campos Nome/CPF das testemunhas:
 
 CONTRATANTE:
 ___________________________________
-(nome do contratante)
+${input.contratanteNome}
 
 CONTRATADA:
 ___________________________________
-(nome do contratado)
+${input.contratado.nome}
 
 TESTEMUNHA CONTRATANTE:
 ___________________________________
@@ -219,6 +229,7 @@ const gerarMinutaContrato = createServerFn({ method: "POST" })
       dataInicio: negociacao.data_inicio,
       dataTermino: negociacao.data_termino,
       vigenciaDias: negociacao.vigencia_dias,
+      localData: montarLocalData(empresa.endereco_cidade ?? null, empresa.endereco_estado ?? null),
     });
 
     const resp = await fetch(
