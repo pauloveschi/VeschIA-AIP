@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEmpresa } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Sparkles, FileText, Download } from "lucide-react";
-import { gerarMinutaContrato, buscarMinutaExistente } from "@/server/contrato.functions";
+import { gerarMinutaContrato, buscarMinutaExistente } from "@/contrato.functions";
 
 export const Route = createFileRoute("/$produto/$empresa/contrato/$id")({
   component: ContratoPage,
