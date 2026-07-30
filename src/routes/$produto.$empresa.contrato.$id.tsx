@@ -173,7 +173,7 @@ const gerarMinutaContrato = createServerFn({ method: "POST" })
     const { data: empresa, error: eEmp } = await supabaseAdmin
       .from("empresas_clientes")
       .select(
-        "nome, cnpj, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado",
+        "nome, razao_social, cnpj, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado",
       )
       .eq("id", solicitacao.empresa_id)
       .single();
@@ -192,8 +192,8 @@ const gerarMinutaContrato = createServerFn({ method: "POST" })
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada no servidor.");
 
     const prompt = montarPrompt({
-      contratanteNome: empresa.nome,
-      contratanteCnpj: empresa.cnpj ?? null,
+      contratanteNome: empresa.razao_social || empresa.nome,
+      contratanteCnpj: empresa.cnpj ? formatarDocumento(empresa.cnpj, "juridica") : null,
       contratanteCidade: empresa.endereco_cidade ?? null,
       contratanteEstado: empresa.endereco_estado ?? null,
       contratanteEndereco: enderecoCompleto({

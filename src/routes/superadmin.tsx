@@ -7,6 +7,7 @@ import { PRODUTOS } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pencil, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/superadmin")({
   component: SuperAdminPage,
@@ -19,6 +20,32 @@ function slugify(s: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function onlyDigits(v: string) {
+  return v.replace(/\D/g, "");
+}
+
+function formatCnpj(v: string) {
+  return onlyDigits(v)
+    .slice(0, 14)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function validarCNPJ(cnpjRaw: string): boolean {
+  const c = onlyDigits(cnpjRaw);
+  if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false;
+  const calc = (pesos: number[]) => {
+    let soma = 0;
+    for (let i = 0; i < pesos.length; i++) soma += Number(c[i]) * pesos[i];
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  if (calc([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) !== Number(c[12])) return false;
+  return calc([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) === Number(c[13]);
 }
 
 function useIsSuperAdmin() {
@@ -38,6 +65,16 @@ interface EmpresaRow {
   id: string;
   slug: string;
   nome: string;
+  razao_social: string | null;
+  cnpj: string | null;
+  email_cadastro: string | null;
+  endereco_cep: string | null;
+  endereco_logradouro: string | null;
+  endereco_numero: string | null;
+  endereco_complemento: string | null;
+  endereco_bairro: string | null;
+  endereco_cidade: string | null;
+  endereco_estado: string | null;
   status: string;
   produtos: string[];
 }
@@ -48,16 +85,15 @@ function useEmpresas() {
     queryFn: async (): Promise<EmpresaRow[]> => {
       const { data, error } = await supabase
         .from("empresas_clientes")
-        .select("id, slug, nome, status, empresa_produtos(produto, ativo)")
+        .select(
+          "id, slug, nome, razao_social, cnpj, email_cadastro, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, status, empresa_produtos(produto, ativo)",
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []).map((e) => ({
-        id: e.id,
-        slug: e.slug,
-        nome: e.nome,
-        status: e.status,
+        ...e,
         produtos: ((e.empresa_produtos ?? []) as { produto: string; ativo: boolean }[]).filter((p) => p.ativo).map((p) => p.produto),
-      }));
+      })) as EmpresaRow[];
     },
   });
 }
@@ -72,20 +108,165 @@ const SEGMENTOS = [
   { slug: "agronegocio", nome: "Agronegócio" },
 ] as const;
 
+interface DadosCadastrais {
+  nome: string;
+  razaoSocial: string;
+  cnpj: string;
+  emailCadastro: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+}
+
+const dadosVazios: DadosCadastrais = {
+  nome: "",
+  razaoSocial: "",
+  cnpj: "",
+  emailCadastro: "",
+  cep: "",
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  cidade: "",
+  estado: "",
+};
+
+/**
+ * Campos cadastrais da empresa cliente. São os mesmos no cadastro novo e na edição,
+ * e alimentam o contrato gerado (razão social, CNPJ, endereço, e a comarca do foro).
+ */
+function CamposCadastrais({
+  dados,
+  set,
+  mostrarNome,
+}: {
+  dados: DadosCadastrais;
+  set: <K extends keyof DadosCadastrais>(k: K, v: DadosCadastrais[K]) => void;
+  mostrarNome: boolean;
+}) {
+  const [buscandoCep, setBuscandoCep] = React.useState(false);
+
+  const buscarCep = async () => {
+    const digits = onlyDigits(dados.cep);
+    if (digits.length !== 8) return;
+    setBuscandoCep(true);
+    try {
+      const resp = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await resp.json();
+      if (!data.erro) {
+        set("logradouro", data.logradouro ?? "");
+        set("bairro", data.bairro ?? "");
+        set("cidade", data.localidade ?? "");
+        set("estado", data.uf ?? "");
+      }
+    } catch {
+      // CEP não encontrado não trava o cadastro, dá pra preencher na mão
+    } finally {
+      setBuscandoCep(false);
+    }
+  };
+
+  return (
+    <>
+      {mostrarNome && (
+        <div className="space-y-1">
+          <Label className="text-[11px] uppercase tracking-wider">Nome (aparece no sistema)</Label>
+          <Input value={dados.nome} onChange={(e) => set("nome", e.target.value)} />
+        </div>
+      )}
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Razão social (usada no contrato)</Label>
+        <Input
+          value={dados.razaoSocial}
+          onChange={(e) => set("razaoSocial", e.target.value)}
+          placeholder="Startup Teste Serviços LTDA"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">CNPJ</Label>
+        <Input value={dados.cnpj} onChange={(e) => set("cnpj", formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" />
+        {dados.cnpj && !validarCNPJ(dados.cnpj) && <p className="text-[11px] text-destructive">CNPJ inválido.</p>}
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">E-mail de cadastro</Label>
+        <Input type="email" value={dados.emailCadastro} onChange={(e) => set("emailCadastro", e.target.value)} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">CEP</Label>
+        <div className="flex gap-2">
+          <Input value={dados.cep} onChange={(e) => set("cep", e.target.value)} onBlur={buscarCep} placeholder="60000-000" />
+          <Button type="button" size="sm" variant="outline" disabled={buscandoCep} onClick={buscarCep} className="shrink-0">
+            {buscandoCep ? "Buscando…" : "Buscar"}
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Logradouro</Label>
+        <Input value={dados.logradouro} onChange={(e) => set("logradouro", e.target.value)} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Número</Label>
+        <Input value={dados.numero} onChange={(e) => set("numero", e.target.value)} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Complemento</Label>
+        <Input value={dados.complemento} onChange={(e) => set("complemento", e.target.value)} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Bairro</Label>
+        <Input value={dados.bairro} onChange={(e) => set("bairro", e.target.value)} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Cidade (define a comarca do foro)</Label>
+        <Input value={dados.cidade} onChange={(e) => set("cidade", e.target.value)} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[11px] uppercase tracking-wider">Estado (UF)</Label>
+        <Input value={dados.estado} onChange={(e) => set("estado", e.target.value)} maxLength={2} />
+      </div>
+    </>
+  );
+}
+
+function linhaDbCadastro(d: DadosCadastrais) {
+  return {
+    razao_social: d.razaoSocial || null,
+    cnpj: d.cnpj ? onlyDigits(d.cnpj) : null,
+    email_cadastro: d.emailCadastro || null,
+    endereco_cep: d.cep || null,
+    endereco_logradouro: d.logradouro || null,
+    endereco_numero: d.numero || null,
+    endereco_complemento: d.complemento || null,
+    endereco_bairro: d.bairro || null,
+    endereco_cidade: d.cidade || null,
+    endereco_estado: d.estado || null,
+  };
+}
+
 function NovaEmpresaForm() {
   const qc = useQueryClient();
-  const [nome, setNome] = React.useState("");
+  const [dados, setDados] = React.useState<DadosCadastrais>(dadosVazios);
   const [slug, setSlug] = React.useState("");
   const [produto, setProduto] = React.useState<string>(PRODUTOS[0].slug);
   const [emailDono, setEmailDono] = React.useState("");
   const [modeloNegocio, setModeloNegocio] = React.useState<"setorial_profissional" | "empresarial_padrao">("empresarial_padrao");
   const [segmento, setSegmento] = React.useState<string>(SEGMENTOS[0].slug);
 
+  const set = <K extends keyof DadosCadastrais>(k: K, v: DadosCadastrais[K]) => {
+    setDados((prev) => ({ ...prev, [k]: v }));
+    if (k === "nome" && !slug) setSlug(slugify(String(v)));
+  };
+
   const createMut = useMutation({
     mutationFn: async () => {
       const { data: empresa, error } = await supabase
         .from("empresas_clientes")
-        .insert({ nome, slug: slug || slugify(nome), status: "trial" })
+        .insert({ nome: dados.nome, slug: slug || slugify(dados.nome), status: "trial", ...linhaDbCadastro(dados) })
         .select()
         .single();
       if (error) throw error;
@@ -120,7 +301,7 @@ function NovaEmpresaForm() {
       return empresa;
     },
     onSuccess: () => {
-      setNome("");
+      setDados(dadosVazios);
       setSlug("");
       setEmailDono("");
       qc.invalidateQueries({ queryKey: ["all-empresas"] });
@@ -131,10 +312,7 @@ function NovaEmpresaForm() {
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
       <h2 className="text-lg font-semibold">Nova empresa cliente</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label className="text-[11px] uppercase tracking-wider">Nome da empresa</Label>
-          <Input value={nome} onChange={(e) => { setNome(e.target.value); if (!slug) setSlug(slugify(e.target.value)); }} />
-        </div>
+        <CamposCadastrais dados={dados} set={set} mostrarNome />
         <div className="space-y-1">
           <Label className="text-[11px] uppercase tracking-wider">Slug (URL)</Label>
           <Input value={slug} onChange={(e) => setSlug(slugify(e.target.value))} placeholder="souza-advocacia" />
@@ -182,10 +360,98 @@ function NovaEmpresaForm() {
         )}
       </div>
       {createMut.isError && <p className="text-xs text-destructive">{(createMut.error as Error).message}</p>}
-      <Button disabled={!nome || !slug || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
+      <Button disabled={!dados.nome || !slug || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
         Criar empresa
       </Button>
     </div>
+  );
+}
+
+function EditarEmpresaForm({ empresa, onDone }: { empresa: EmpresaRow; onDone: () => void }) {
+  const [dados, setDados] = React.useState<DadosCadastrais>({
+    nome: empresa.nome,
+    razaoSocial: empresa.razao_social ?? "",
+    cnpj: empresa.cnpj ? formatCnpj(empresa.cnpj) : "",
+    emailCadastro: empresa.email_cadastro ?? "",
+    cep: empresa.endereco_cep ?? "",
+    logradouro: empresa.endereco_logradouro ?? "",
+    numero: empresa.endereco_numero ?? "",
+    complemento: empresa.endereco_complemento ?? "",
+    bairro: empresa.endereco_bairro ?? "",
+    cidade: empresa.endereco_cidade ?? "",
+    estado: empresa.endereco_estado ?? "",
+  });
+
+  const set = <K extends keyof DadosCadastrais>(k: K, v: DadosCadastrais[K]) => setDados((prev) => ({ ...prev, [k]: v }));
+
+  const salvarMut = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("empresas_clientes").update(linhaDbCadastro(dados)).eq("id", empresa.id);
+      if (error) throw error;
+    },
+    onSuccess: onDone,
+  });
+
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3 space-y-3">
+      <p className="text-[12px] text-muted-foreground">
+        Esses dados alimentam o contrato gerado: razão social e CNPJ entram na cláusula das partes, e a cidade define a comarca do foro.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <CamposCadastrais dados={dados} set={set} mostrarNome={false} />
+      </div>
+      {salvarMut.isError && <p className="text-xs text-destructive">{(salvarMut.error as Error).message}</p>}
+      <div className="flex gap-2 justify-end">
+        <Button size="sm" variant="ghost" onClick={onDone}>Cancelar</Button>
+        <Button size="sm" disabled={salvarMut.isPending} onClick={() => salvarMut.mutate()} className="bg-primary text-primary-foreground">
+          Salvar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EmpresaItem({ empresa }: { empresa: EmpresaRow }) {
+  const qc = useQueryClient();
+  const [editando, setEditando] = React.useState(false);
+  const faltaDado = !empresa.cnpj || !empresa.endereco_cidade;
+
+  return (
+    <li className="py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-sm">{empresa.nome}</p>
+          <p className="text-xs text-muted-foreground">{empresa.status}</p>
+        </div>
+        <Button size="sm" variant="outline" className="h-8 shrink-0" onClick={() => setEditando((v) => !v)}>
+          <Pencil className="size-3.5 mr-1" /> {editando ? "Fechar" : "Editar cadastro"}
+        </Button>
+      </div>
+
+      {faltaDado && !editando && (
+        <p className="text-[11.5px] text-muted-foreground flex items-center gap-1 mt-1">
+          <AlertCircle className="size-3" /> Falta CNPJ ou cidade, o contrato vai sair com esses campos em branco.
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {empresa.produtos.map((p) => (
+          <Link key={p} to="/$produto/$empresa" params={{ produto: p, empresa: empresa.slug }} className="text-[11px] px-2 py-0.5 rounded-full bg-secondary hover:bg-accent/20">
+            /{p}/{empresa.slug}
+          </Link>
+        ))}
+      </div>
+
+      {editando && (
+        <EditarEmpresaForm
+          empresa={empresa}
+          onDone={() => {
+            setEditando(false);
+            qc.invalidateQueries({ queryKey: ["all-empresas"] });
+          }}
+        />
+      )}
+    </li>
   );
 }
 
@@ -247,21 +513,7 @@ function SuperAdminPage() {
           ) : (
             <ul className="divide-y divide-border">
               {empresas.map((e) => (
-                <li key={e.id} className="py-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-sm">{e.nome}</p>
-                      <p className="text-xs text-muted-foreground">{e.status}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {e.produtos.map((p) => (
-                      <Link key={p} to="/$produto/$empresa" params={{ produto: p, empresa: e.slug }} className="text-[11px] px-2 py-0.5 rounded-full bg-secondary hover:bg-accent/20">
-                        /{p}/{e.slug}
-                      </Link>
-                    ))}
-                  </div>
-                </li>
+                <EmpresaItem key={e.id} empresa={e} />
               ))}
             </ul>
           )}
