@@ -86,7 +86,7 @@ Responda APENAS com o texto do contrato, em texto puro (sem markdown, sem asteri
 }
 
 const gerarMinutaContrato = createServerFn({ method: "POST" })
-  .validator((input: unknown) => inputSchema.parse(input))
+  .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { gerarPdfSimples } = await import("@/pdf-simples.server");
@@ -211,7 +211,7 @@ const gerarMinutaContrato = createServerFn({ method: "POST" })
   });
 
 const buscarMinutaExistente = createServerFn({ method: "POST" })
-  .validator((input: unknown) => inputSchema.parse(input))
+  .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
