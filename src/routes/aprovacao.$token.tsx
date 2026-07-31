@@ -120,6 +120,17 @@ const registrarDecisao = createServerFn({ method: "POST" })
       .update({ usado_em: new Date().toISOString(), decisao: data.decisao })
       .eq("id", registro.id);
 
+    // Decisão tomada de fora do sistema: o motor continua o fluxo na sequência.
+    const { data: etapaDecidida } = await supabaseAdmin
+      .from("etapas_execucao")
+      .select("solicitacao_id")
+      .eq("id", registro.etapa_execucao_id)
+      .single();
+    if (etapaDecidida?.solicitacao_id) {
+      const { avancarFluxo } = await import("@/motor.server");
+      await avancarFluxo(supabaseAdmin, etapaDecidida.solicitacao_id);
+    }
+
     return { ok: true, decisao: data.decisao };
   });
 

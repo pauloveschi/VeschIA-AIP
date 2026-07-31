@@ -2,6 +2,8 @@ import * as React from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { useEmpresa, useProdutoAtual, useProdutoContratado, useIsEmpresaStaff, produtoInfo } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,18 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+
+const motorSchema = z.object({ solicitacaoId: z.string() });
+
+/** Chama o motor pra empurrar o fluxo assim que a solicitação nasce. */
+const rodarMotor = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => motorSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { avancarFluxo } = await import("@/motor.server");
+    return avancarFluxo(supabaseAdmin, data.solicitacaoId);
+  });
+
 function useSolicitacoes(empresaId: string, produto: string) {
   return useQuery({
     queryKey: ["solicitacoes", empresaId, produto],
@@ -72,16 +86,21 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
 
   const createMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("solicitacoes").insert({
-        empresa_id: empresaId,
-        produto,
-        titulo,
-        descricao: descricao || null,
-        area: area || null,
-        centro_custo: centroCusto || null,
-        solicitante_id: user?.id,
-      });
+      const { data: criada, error } = await supabase
+        .from("solicitacoes")
+        .insert({
+          empresa_id: empresaId,
+          produto,
+          titulo,
+          descricao: descricao || null,
+          area: area || null,
+          centro_custo: centroCusto || null,
+          solicitante_id: user?.id,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      if (criada?.id) await rodarMotor({ data: { solicitacaoId: criada.id } });
     },
     onSuccess: () => {
       setTitulo("");

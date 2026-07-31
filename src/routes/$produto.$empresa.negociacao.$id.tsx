@@ -2,6 +2,8 @@ import * as React from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { useEmpresa } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +49,18 @@ interface Negociacao {
   testemunha_2_email: string | null;
   justificativa_escolha: string | null;
 }
+
+
+const motorSchema = z.object({ solicitacaoId: z.string() });
+
+/** Chama o motor pra empurrar o fluxo depois que a negociação fecha. */
+const rodarMotor = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => motorSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { avancarFluxo } = await import("@/motor.server");
+    return avancarFluxo(supabaseAdmin, data.solicitacaoId);
+  });
 
 /** Remove tudo que não é dígito. */
 function onlyDigits(v: string) {
@@ -465,6 +479,9 @@ function EscolherFornecedor({ negociacao, solicitacaoId, onDone }: { negociacao:
       if (etapa) {
         await supabase.from("etapas_execucao").update({ status: "aprovada", decidido_em: new Date().toISOString() }).eq("id", etapa.id);
       }
+
+      // Com a negociação fechada, o motor segue sozinho: gera a minuta e avisa quem aprova.
+      await rodarMotor({ data: { solicitacaoId } });
     },
     onSuccess: () => onDone(),
   });

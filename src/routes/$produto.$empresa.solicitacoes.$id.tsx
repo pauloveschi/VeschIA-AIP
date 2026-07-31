@@ -175,6 +175,18 @@ const notificarAprovador = createServerFn({ method: "POST" })
     return { enviadoPara: papel.email };
   });
 
+
+const motorSchema = z.object({ solicitacaoId: z.string() });
+
+/** Chama o motor pra empurrar o fluxo o quanto der sem intervenção humana. */
+const rodarMotor = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => motorSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { avancarFluxo } = await import("@/motor.server");
+    return avancarFluxo(supabaseAdmin, data.solicitacaoId);
+  });
+
 function useSolicitacaoDetail(id: string) {
   return useQuery({
     queryKey: ["solicitacao-detail", id],
@@ -259,6 +271,9 @@ function useEtapasExecucao(solicitacaoId: string, empresaId: string, produto: st
         await supabase.from("etapas_execucao").insert(novasLinhas);
       }
 
+      // Deixa o motor empurrar o que for automático antes de desenhar a tela.
+      await rodarMotor({ data: { solicitacaoId } });
+
       const { data, error } = await supabase
         .from("etapas_execucao")
         .select(
@@ -278,7 +293,11 @@ function useEtapasExecucao(solicitacaoId: string, empresaId: string, produto: st
         .eq("id", etapaId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["etapas-execucao", solicitacaoId] }),
+    onSuccess: async () => {
+      await rodarMotor({ data: { solicitacaoId } });
+      qc.invalidateQueries({ queryKey: ["etapas-execucao", solicitacaoId] });
+      qc.invalidateQueries({ queryKey: ["solicitacao-detail", solicitacaoId] });
+    },
   });
 
   return { ...query, decidir };
@@ -310,9 +329,9 @@ function BotaoNotificar({ etapaId }: { etapaId: string }) {
         className="h-8"
         disabled={notificarMut.isPending}
         onClick={() => notificarMut.mutate()}
-        title="Enviar aviso por e-mail ao responsável"
+        title="Reenviar o aviso por e-mail ao responsável"
       >
-        <Mail className="size-3.5 mr-1" /> {notificarMut.isPending ? "Enviando…" : "Avisar por e-mail"}
+        <Mail className="size-3.5 mr-1" /> {notificarMut.isPending ? "Enviando…" : "Reenviar aviso"}
       </Button>
       {msg && <p className="text-[11px] text-muted-foreground mt-1">{msg}</p>}
       {erro && <p className="text-[11px] text-destructive mt-1 max-w-52">{erro}</p>}
