@@ -7,7 +7,8 @@ import { PRODUTOS } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, AlertCircle } from "lucide-react";
+import { Pencil, AlertCircle, PlayCircle } from "lucide-react";
+import { createServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/superadmin")({
   component: SuperAdminPage,
@@ -455,6 +456,61 @@ function EmpresaItem({ empresa }: { empresa: EmpresaRow }) {
   );
 }
 
+
+/** Roda a rotina diária na hora, pra testar sem esperar o agendador. */
+const rodarRotinaAgora = createServerFn({ method: "POST" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { rodarRotinaDiaria } = await import("@/rotina.server");
+  return rodarRotinaDiaria(supabaseAdmin);
+});
+
+function PainelRotina() {
+  const [resultado, setResultado] = React.useState<string[] | null>(null);
+  const [erro, setErro] = React.useState<string | null>(null);
+
+  const rodarMut = useMutation({
+    mutationFn: async () => rodarRotinaAgora(),
+    onSuccess: (r) => {
+      setErro(null);
+      const linhas: string[] = [`${r.processados} contrato(s) ativo(s) verificado(s).`];
+      if (r.renovacoesAtivadas.length > 0) linhas.push(`Renovação ativada: ${r.renovacoesAtivadas.join(", ")}`);
+      if (r.alertasPrevios.length > 0) linhas.push(`Alerta prévio enviado: ${r.alertasPrevios.join(", ")}`);
+      if (r.erros.length > 0) linhas.push(`Problemas: ${r.erros.join(" | ")}`);
+      if (r.renovacoesAtivadas.length === 0 && r.alertasPrevios.length === 0) {
+        linhas.push("Nenhum contrato precisou de ação hoje.");
+      }
+      setResultado(linhas);
+    },
+    onError: (e: Error) => {
+      setResultado(null);
+      setErro(e.message);
+    },
+  });
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold">Rotina de contratos</h2>
+        <p className="text-[12.5px] text-muted-foreground mt-0.5">
+          Roda sozinha uma vez por dia. Ela abre a etapa de renovação quando o contrato chega na data de término,
+          e manda alerta prévio nos contratos longos. Use o botão só pra testar fora do horário.
+        </p>
+      </div>
+      <Button variant="outline" disabled={rodarMut.isPending} onClick={() => rodarMut.mutate()}>
+        <PlayCircle className="size-4 mr-1.5" /> {rodarMut.isPending ? "Rodando…" : "Rodar agora"}
+      </Button>
+      {resultado && (
+        <ul className="text-[12.5px] text-muted-foreground space-y-0.5">
+          {resultado.map((l, i) => (
+            <li key={i}>{l}</li>
+          ))}
+        </ul>
+      )}
+      {erro && <p className="text-[12.5px] text-destructive">{erro}</p>}
+    </div>
+  );
+}
+
 function SuperAdminPage() {
   const { user, loading: authLoading } = useAuth();
   const { data: isSuperAdmin, isLoading: checking } = useIsSuperAdmin();
@@ -503,6 +559,8 @@ function SuperAdminPage() {
 
       <main className="max-w-3xl mx-auto px-5 py-6 space-y-4">
         <NovaEmpresaForm />
+
+        <PainelRotina />
 
         <div className="rounded-xl border border-border bg-card p-4">
           <h2 className="text-lg font-semibold mb-3">Empresas ativas</h2>
