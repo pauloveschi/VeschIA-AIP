@@ -60,13 +60,15 @@ async function marcarEtapa(admin: any, etapaId: string, status: "aprovada" | "re
 function calcularStatusSolicitacao(etapas: EtapaCarregada[]): string {
   if (etapas.some((e) => e.status === "rejeitada")) return "rejeitada";
 
-  const aprovada = (nome: string) => etapas.find((e) => e.nome_etapa === nome)?.status === "aprovada";
-  const todasResolvidas = etapas.every((e) => e.status !== "pendente" || ETAPAS_CONTINUAS.includes(e.nome_etapa));
+  const resolvida = (nome: string) => {
+    const st = etapas.find((e) => e.nome_etapa === nome)?.status;
+    return st === "aprovada" || st === "pulada";
+  };
 
-  if (aprovada("Encerramento") || aprovada("Renovação ou Encerramento")) return "encerrada";
-  if (aprovada("Assinatura")) return todasResolvidas ? "assinada" : "assinada";
-  if (aprovada("Aprovação Interna") || aprovada("Aprovação")) return "aprovada";
-  if (etapas.some((e) => e.nome_etapa.startsWith("Análise") && e.status === "aprovada")) return "em_analise";
+  if (resolvida("Encerramento") || resolvida("Renovação ou Encerramento")) return "encerrada";
+  if (resolvida("Assinatura")) return "assinada";
+  if (resolvida("Aprovação Interna") || resolvida("Aprovação")) return "aprovada";
+  if (etapas.some((e) => e.nome_etapa.startsWith("Análise") && (e.status === "aprovada" || e.status === "pulada"))) return "em_analise";
   return "aberta";
 }
 
