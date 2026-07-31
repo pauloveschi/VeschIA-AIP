@@ -431,7 +431,11 @@ function NegociacaoCard({
 
   const escolherMut = useMutation({
     mutationFn: async () => api.escolher(negociacao.id, justificativa),
-    onSuccess: onChange,
+    onSuccess: () => {
+      setEscolhendo(false);
+      setJustificativa("");
+      onChange();
+    },
   });
 
   if (editando) {
@@ -478,7 +482,7 @@ function NegociacaoCard({
         </p>
       )}
 
-      {escolhendo ? (
+      {escolhendo && negociacao.status === "participante" ? (
         <div className="space-y-2">
           <Textarea
             placeholder="Justificativa da escolha (protege contra questionamento de compliance: por que essa e não outra)"
