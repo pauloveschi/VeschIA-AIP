@@ -24,6 +24,7 @@ import { Route as ProdutoEmpresaSolicitacoesIdRouteImport } from './routes/$prod
 import { Route as ProdutoEmpresaNegociacaoIdRouteImport } from './routes/$produto.$empresa.negociacao.$id'
 import { Route as ProdutoEmpresaContratoIdRouteImport } from './routes/$produto.$empresa.contrato.$id'
 import { Route as AprovacaoTokenRouteImport } from './routes/aprovacao.$token'
+import { Route as NegociacaoExternaTokenRouteImport } from './routes/negociacao-externa.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -105,6 +106,11 @@ const AprovacaoTokenRoute = AprovacaoTokenRouteImport.update({
   path: '/aprovacao/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NegociacaoExternaTokenRoute = NegociacaoExternaTokenRouteImport.update({
+  id: '/negociacao-externa/$token',
+  path: '/negociacao-externa/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
   '/aprovacao/$token': typeof AprovacaoTokenRoute
+  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
   '/aprovacao/$token': typeof AprovacaoTokenRoute
+  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
   '/aprovacao/$token': typeof AprovacaoTokenRoute
+  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/negociacao/$id'
     | '/$produto/$empresa/contrato/$id'
     | '/aprovacao/$token'
+    | '/negociacao-externa/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/negociacao/$id'
     | '/$produto/$empresa/contrato/$id'
     | '/aprovacao/$token'
+    | '/negociacao-externa/$token'
   id:
     | '__root__'
     | '/'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/negociacao/$id'
     | '/$produto/$empresa/contrato/$id'
     | '/aprovacao/$token'
+    | '/negociacao-externa/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SuperadminRoute: typeof SuperadminRoute
   AprovacaoTokenRoute: typeof AprovacaoTokenRoute
+  NegociacaoExternaTokenRoute: typeof NegociacaoExternaTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AprovacaoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/negociacao-externa/$token': {
+      id: '/negociacao-externa/$token'
+      path: '/negociacao-externa/$token'
+      fullPath: '/negociacao-externa/$token'
+      preLoaderRoute: typeof NegociacaoExternaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -383,6 +403,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SuperadminRoute: SuperadminRoute,
   AprovacaoTokenRoute: AprovacaoTokenRoute,
+  NegociacaoExternaTokenRoute: NegociacaoExternaTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

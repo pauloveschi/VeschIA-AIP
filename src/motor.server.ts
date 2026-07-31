@@ -123,39 +123,21 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
 
   let link: string;
 
-  if (eTrabalho) {
-    // Etapa de trabalho: manda direto pra tela dentro do sistema (exige login),
-    // sem token, porque não existe "aprovar" aqui, existe fazer o trabalho.
-    const { data: dadosEmpresa } = await admin
-      .from("empresas_clientes")
-      .select("slug")
-      .eq("id", solicitacao?.empresa_id ?? "")
-      .maybeSingle();
-    const { data: sol } = await admin.from("solicitacoes").select("produto").eq("id", solicitacaoId).single();
-    link = `${base}/${sol?.produto ?? "aiprocont"}/${dadosEmpresa?.slug ?? ""}/${rotaTrabalho}/${solicitacaoId}`;
+  const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  // Etapa de trabalho vale mais tempo: a pessoa pode voltar várias vezes até concluir.
+  const diasValidade = eTrabalho ? 30 : 7;
+  const expiraEm = new Date(Date.now() + diasValidade * 24 * 60 * 60 * 1000).toISOString();
 
-    // Registra que o aviso foi mandado, pra não repetir a cada passagem do motor.
-    await admin.from("aprovacao_tokens").insert({
-      token: `trabalho-${etapa.id}`,
-      etapa_execucao_id: etapa.id,
-      enviado_para: papel.email,
-      expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      usado_em: new Date().toISOString(),
-    });
-  } else {
-    const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-    const expiraEm = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { error: eToken } = await admin.from("aprovacao_tokens").insert({
+    token,
+    etapa_execucao_id: etapa.id,
+    enviado_para: papel.email,
+    expira_em: expiraEm,
+    tipo: eTrabalho ? "trabalho" : "decisao",
+  });
+  if (eToken) return null;
 
-    const { error: eToken } = await admin.from("aprovacao_tokens").insert({
-      token,
-      etapa_execucao_id: etapa.id,
-      enviado_para: papel.email,
-      expira_em: expiraEm,
-    });
-    if (eToken) return null;
-
-    link = `${base}/aprovacao/${token}`;
-  }
+  link = eTrabalho ? `${base}/${rotaTrabalho}-externa/${token}` : `${base}/aprovacao/${token}`;
 
   const valorFmt =
     solicitacao?.valor != null
@@ -184,7 +166,7 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
       <p style="margin: 0 0 18px; font-size: 12px;"><a href="${link}" style="color: #1a73e8;">${link}</a></p>
       <p style="margin: 0; font-size: 12px; color: #6b7a90;">
         ${eTrabalho
-          ? "O link abre a tela de trabalho dentro do sistema, onde você precisa estar logado."
+          ? "O link abre a tela onde você cadastra as empresas e escolhe uma. Válido por 30 dias, e pode ser aberto quantas vezes precisar."
           : "O link abre uma tela com os detalhes, onde você aprova ou rejeita. Válido por 7 dias e por um único uso."}
       </p>
     </div>
