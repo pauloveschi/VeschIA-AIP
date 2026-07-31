@@ -308,6 +308,9 @@ function SolicitacaoDetailPage() {
               const isSistema = etapa.configuracao_fluxo.responsavel_tipo === "sistema";
               const isNegociacao = etapa.configuracao_fluxo.nome_etapa === "Negociação Comercial";
               const isElaboracaoContrato = etapa.configuracao_fluxo.nome_etapa === "Elaboração do Contrato";
+              const isDecisaoCustomizada =
+                etapa.configuracao_fluxo.nome_etapa === "Renovação ou Encerramento" ||
+                etapa.configuracao_fluxo.nome_etapa === "Validação Jurídica";
               const isPendente = etapa.status === "pendente";
               // Qualquer etapa ainda pendente trava as seguintes, obrigatória ou não.
               // Etapa opcional que não se aplica àquela solicitação deve ser pulada
@@ -343,6 +346,7 @@ function SolicitacaoDetailPage() {
                       {!etapa.configuracao_fluxo.obrigatoria && " · opcional"}
                       {etapa.status === "pulada" && " · pulada nesta solicitação"}
                       {isPendente && etapaAnteriorPendente && " · aguardando etapa anterior"}
+                      {isPendente && !etapaAnteriorPendente && isDecisaoCustomizada && " · decisão feita pelo link de e-mail"}
                     </p>
                   </div>
                   {isNegociacao && isPendente && !etapaAnteriorPendente && (
@@ -381,7 +385,7 @@ function SolicitacaoDetailPage() {
                   {isPendente && !isIa && !isSistema && !isElaboracaoContrato && !etapaAnteriorPendente && (
                     <BotaoNotificar etapaId={etapa.id} solicitacaoId={id} />
                   )}
-                  {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && (
+                  {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && !isDecisaoCustomizada && (
                     <div className="flex gap-2 shrink-0">
                       <Button
                         size="sm"
