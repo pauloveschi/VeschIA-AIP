@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Check, Clock, Sparkles, X, Cog, ArrowUpRight, Mail } from "lucide-react";
+import { ChevronLeft, Check, Clock, Sparkles, X, Cog, ArrowUpRight, Mail, SkipForward } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/solicitacoes/$id")({
   component: SolicitacaoDetailPage,
@@ -286,7 +286,7 @@ function useEtapasExecucao(solicitacaoId: string, empresaId: string, produto: st
   });
 
   const decidir = useMutation({
-    mutationFn: async ({ etapaId, status }: { etapaId: string; status: "aprovada" | "rejeitada" }) => {
+    mutationFn: async ({ etapaId, status }: { etapaId: string; status: "aprovada" | "rejeitada" | "pulada" }) => {
       const { error } = await supabase
         .from("etapas_execucao")
         .update({ status, decidido_em: new Date().toISOString() })
@@ -342,6 +342,7 @@ function BotaoNotificar({ etapaId }: { etapaId: string }) {
 function EtapaIcon({ status }: { status: string }) {
   if (status === "aprovada") return <Check className="size-4" style={{ color: "#fff" }} />;
   if (status === "rejeitada") return <X className="size-4" style={{ color: "#fff" }} />;
+  if (status === "pulada") return <SkipForward className="size-4" style={{ color: "#fff" }} />;
   return <Clock className="size-4 text-muted-foreground" />;
 }
 
@@ -397,19 +398,18 @@ function SolicitacaoDetailPage() {
               const isNegociacao = etapa.configuracao_fluxo.nome_etapa === "Negociação Comercial";
               const isElaboracaoContrato = etapa.configuracao_fluxo.nome_etapa === "Elaboração do Contrato";
               const isPendente = etapa.status === "pendente";
-              // Só trava a fila entre etapas que dependem de decisão humana (tipo "papel" e
-              // obrigatórias). Etapas automáticas (sistema/ia) ainda não têm rotina própria
-              // pra fechar sozinhas, então não fazem sentido travar quem vem depois delas ainda.
-              const etapaAnteriorPendente = etapas
-                .slice(0, index)
-                .some(
-                  (anterior) =>
-                    anterior.configuracao_fluxo.responsavel_tipo === "papel" &&
-                    anterior.configuracao_fluxo.obrigatoria &&
-                    anterior.status !== "aprovada",
-                );
+              // Qualquer etapa ainda pendente trava as seguintes, obrigatória ou não.
+              // Etapa opcional que não se aplica àquela solicitação deve ser pulada
+              // de forma explícita (botão "Pular etapa"), não ignorada em silêncio.
+              const etapaAnteriorPendente = etapas.slice(0, index).some((anterior) => anterior.status === "pendente");
               const bg =
-                etapa.status === "aprovada" ? "var(--ops-aprovada)" : etapa.status === "rejeitada" ? "var(--ops-rejeitada)" : "var(--muted)";
+                etapa.status === "aprovada"
+                  ? "var(--ops-aprovada)"
+                  : etapa.status === "rejeitada"
+                    ? "var(--ops-rejeitada)"
+                    : etapa.status === "pulada"
+                      ? "var(--muted-foreground)"
+                      : "var(--muted)";
               const nomeResponsavel = etapa.papel_resolvido?.nome ?? etapa.configuracao_fluxo.papeis_empresa?.nome ?? null;
               return (
                 <div key={etapa.id} className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
@@ -430,10 +430,11 @@ function SolicitacaoDetailPage() {
                     <p className="text-[12px] text-muted-foreground">
                       {isIa ? "Responsável: IA" : isSistema ? "Automático" : `Responsável: ${nomeResponsavel ?? "não definido"}`}
                       {!etapa.configuracao_fluxo.obrigatoria && " · opcional"}
+                      {etapa.status === "pulada" && " · pulada nesta solicitação"}
                       {isPendente && etapaAnteriorPendente && " · aguardando etapa anterior"}
                     </p>
                   </div>
-                  {isNegociacao && isPendente && (
+                  {isNegociacao && isPendente && !etapaAnteriorPendente && (
                     <Link
                       to="/$produto/$empresa/negociacao/$id"
                       params={{ produto, empresa: empresaSlug, id }}
@@ -444,7 +445,7 @@ function SolicitacaoDetailPage() {
                       </Button>
                     </Link>
                   )}
-                  {isElaboracaoContrato && isPendente && (
+                  {isElaboracaoContrato && isPendente && !etapaAnteriorPendente && (
                     <Link
                       to="/$produto/$empresa/contrato/$id"
                       params={{ produto, empresa: empresaSlug, id }}
@@ -454,6 +455,17 @@ function SolicitacaoDetailPage() {
                         Elaborar contrato <ArrowUpRight className="size-3.5 ml-1" />
                       </Button>
                     </Link>
+                  )}
+                  {isPendente && !etapa.configuracao_fluxo.obrigatoria && !etapaAnteriorPendente && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 shrink-0 text-muted-foreground"
+                      title="Marcar como não aplicável nesta solicitação"
+                      onClick={() => decidir.mutate({ etapaId: etapa.id, status: "pulada" })}
+                    >
+                      <SkipForward className="size-3.5 mr-1" /> Pular etapa
+                    </Button>
                   )}
                   {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && !etapaAnteriorPendente && (
                     <BotaoNotificar etapaId={etapa.id} />
