@@ -370,6 +370,11 @@ async function executarCadastroContrato(admin: any, solicitacaoId: string) {
     vigencia_dias: negociacao.vigencia_dias,
     status: "ativo",
   });
+
+  // 23505 = violação de unicidade em contratos.solicitacao_id. Significa que outra
+  // execução do motor criou o contrato entre a checagem acima e este insert. O estado
+  // desejado (existe exatamente um contrato) foi atingido, então não é erro.
+  if (error && (error as any).code === "23505") return;
   if (error) throw new Error(`Erro ao cadastrar o contrato: ${error.message}`);
 }
 
