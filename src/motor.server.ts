@@ -206,6 +206,123 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
   return papel.email;
 }
 
+interface FaixaValor {
+  valor_max: number | null;
+  aprovadores: string[];
+}
+
+interface CondicaoAprovacaoPorValor {
+  tipo: "aprovacao_por_valor";
+  faixas: FaixaValor[];
+  aprovador_extra_se_papel_existir?: string;
+}
+
+/** Decide quais papéis aprovam, dada a condição de faixa e o valor da solicitação. */
+function papeisDaFaixa(
+  condicao: CondicaoAprovacaoPorValor,
+  valor: number,
+  papeis: { id: string; nome: string }[],
+): string[] {
+  const faixa =
+    condicao.faixas.find((f) => f.valor_max != null && valor <= f.valor_max) ??
+    condicao.faixas.find((f) => f.valor_max == null) ??
+    condicao.faixas[0];
+
+  const nomes = new Set(faixa?.aprovadores ?? []);
+  const extra = condicao.aprovador_extra_se_papel_existir;
+  if (extra && papeis.some((p) => p.nome === extra)) nomes.add(extra);
+
+  return Array.from(nomes)
+    .map((nome) => papeis.find((p) => p.nome === nome)?.id)
+    .filter((id): id is string => !!id);
+}
+
+/**
+ * Reconcilia as etapas de aprovação que dependem do valor da solicitação.
+ *
+ * Por que isso existe: as `etapas_execucao` nascem junto com a solicitação, e nesse
+ * momento `valor` ainda é null (o valor só é definido lá na Negociação Comercial).
+ * Resolver a faixa naquele instante daria sempre a faixa mais baixa, e uma
+ * contratação acima da alçada nunca subiria pro Diretor.
+ *
+ * Então o motor reconcilia sempre que roda: assim que o valor existe, as linhas
+ * pendentes passam a refletir a faixa correta. Etapas já decididas nunca são
+ * tocadas, e o aprovador delas conta como coberto (o Gestor que já aprovou não
+ * precisa aprovar de novo só porque o Diretor entrou na jogada).
+ */
+async function reconciliarAprovadoresPorValor(admin: any, solicitacaoId: string) {
+  const { data: solicitacao } = await admin
+    .from("solicitacoes")
+    .select("valor, empresa_id, produto")
+    .eq("id", solicitacaoId)
+    .single();
+
+  // Sem valor definido ainda, não há o que reconciliar: a faixa é indeterminável.
+  if (!solicitacao || solicitacao.valor == null) return;
+  const valor = Number(solicitacao.valor);
+
+  const { data: configs } = await admin
+    .from("configuracao_fluxo")
+    .select("id, condicao, responsavel_tipo")
+    .eq("empresa_id", solicitacao.empresa_id)
+    .eq("produto", solicitacao.produto)
+    .eq("ativo", true);
+
+  const configsPorValor = ((configs ?? []) as any[]).filter(
+    (c) => c.responsavel_tipo === "papel" && c.condicao?.tipo === "aprovacao_por_valor",
+  );
+  if (configsPorValor.length === 0) return;
+
+  const { data: papeis } = await admin
+    .from("papeis_empresa")
+    .select("id, nome")
+    .eq("empresa_id", solicitacao.empresa_id);
+
+  for (const config of configsPorValor) {
+    const desejados = papeisDaFaixa(config.condicao, valor, (papeis ?? []) as any[]);
+    if (desejados.length === 0) continue;
+
+    const { data: existentes } = await admin
+      .from("etapas_execucao")
+      .select("id, status, papel_resolvido_id")
+      .eq("solicitacao_id", solicitacaoId)
+      .eq("configuracao_fluxo_id", config.id);
+
+    const linhas = (existentes ?? []) as any[];
+    const decididas = linhas.filter((l) => l.status !== "pendente");
+    const pendentes = linhas.filter((l) => l.status === "pendente");
+
+    // Quem já decidiu está coberto e não volta pra fila.
+    const cobertos = new Set(decididas.map((l) => l.papel_resolvido_id).filter(Boolean));
+
+    // Tira da fila quem não faz parte da faixa (ex: linha sem papel resolvido,
+    // criada quando o valor ainda era desconhecido).
+    const sobrando = pendentes.filter(
+      (l) => !l.papel_resolvido_id || !desejados.includes(l.papel_resolvido_id),
+    );
+    for (const linha of sobrando) {
+      await admin.from("etapas_execucao").delete().eq("id", linha.id).eq("status", "pendente");
+    }
+
+    const jaNaFila = new Set(
+      pendentes
+        .filter((l) => l.papel_resolvido_id && desejados.includes(l.papel_resolvido_id))
+        .map((l) => l.papel_resolvido_id),
+    );
+
+    const faltando = desejados.filter((papelId) => !jaNaFila.has(papelId) && !cobertos.has(papelId));
+    if (faltando.length > 0) {
+      await admin.from("etapas_execucao").insert(
+        faltando.map((papelId) => ({
+          solicitacao_id: solicitacaoId,
+          configuracao_fluxo_id: config.id,
+          papel_resolvido_id: papelId,
+        })),
+      );
+    }
+  }
+}
+
 /** Cria o registro definitivo do contrato a partir da negociação escolhida. */
 async function executarCadastroContrato(admin: any, solicitacaoId: string) {
   const { data: jaExiste } = await admin
@@ -272,6 +389,10 @@ export interface ResultadoMotor {
 export async function avancarFluxo(admin: any, solicitacaoId: string): Promise<ResultadoMotor> {
   const executadas: string[] = [];
   let avisoEnviadoPara: string | null = null;
+
+  // Antes de andar, garante que as etapas que dependem do valor estejam com os
+  // aprovadores certos. É aqui porque o valor só passa a existir no meio do fluxo.
+  await reconciliarAprovadoresPorValor(admin, solicitacaoId);
 
   // O limite existe só como trava de segurança contra laço infinito.
   for (let volta = 0; volta < 30; volta++) {
