@@ -66,115 +66,26 @@ interface Papel {
 }
 
 
-const notificarSchema = z.object({ etapaExecucaoId: z.string() });
+const notificarSchema = z.object({ etapaExecucaoId: z.string(), solicitacaoId: z.string() });
 
 /**
- * Manda o aviso por e-mail pro papel responsável por uma etapa pendente.
- * Gera um token de uso único (7 dias) que abre a tela pública de aprovação,
- * pra o aprovador poder decidir mesmo sem ter conta no sistema.
+ * Reenvia o aviso de uma etapa: apaga o registro de "já avisei" e deixa o motor
+ * mandar de novo, do jeito certo pro tipo da etapa (decisão ou trabalho).
  */
-const notificarAprovador = createServerFn({ method: "POST" })
+const reenviarAviso = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => notificarSchema.parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { avancarFluxo } = await import("@/motor.server");
 
-    const { data: etapa } = await supabaseAdmin
-      .from("etapas_execucao")
-      .select(
-        "id, status, solicitacao_id, papel_resolvido_id, configuracao_fluxo:configuracao_fluxo_id(nome_etapa, papel_id)",
-      )
-      .eq("id", data.etapaExecucaoId)
-      .single();
-    if (!etapa) throw new Error("Etapa não encontrada.");
-    if (etapa.status !== "pendente") throw new Error("Essa etapa já foi decidida.");
+    await supabaseAdmin.from("aprovacao_tokens").delete().eq("etapa_execucao_id", data.etapaExecucaoId);
+    const resultado = await avancarFluxo(supabaseAdmin, data.solicitacaoId);
 
-    const papelId = etapa.papel_resolvido_id ?? (etapa as any).configuracao_fluxo?.papel_id;
-    if (!papelId) throw new Error("Essa etapa não tem papel responsável definido.");
-
-    const { data: papel } = await supabaseAdmin.from("papeis_empresa").select("nome, email").eq("id", papelId).single();
-    if (!papel?.email) throw new Error(`O papel ${papel?.nome ?? ""} não tem e-mail cadastrado. Defina em Configuração do fluxo.`);
-
-    const { data: solicitacao } = await supabaseAdmin
-      .from("solicitacoes")
-      .select("numero, titulo, valor, fornecedor_nome, empresa_id")
-      .eq("id", etapa.solicitacao_id)
-      .single();
-
-    const { data: empresa } = await supabaseAdmin
-      .from("empresas_clientes")
-      .select("nome")
-      .eq("id", solicitacao?.empresa_id ?? "")
-      .maybeSingle();
-
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY não configurada no servidor.");
-
-    const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-    const expiraEm = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { error: eToken } = await supabaseAdmin.from("aprovacao_tokens").insert({
-      token,
-      etapa_execucao_id: etapa.id,
-      enviado_para: papel.email,
-      expira_em: expiraEm,
-    });
-    if (eToken) throw new Error("Não foi possível gerar o link de aprovação.");
-
-    const base = process.env.APP_BASE_URL || "https://veschia-aip.vercel.app";
-    const linkAprovar = `${base}/aprovacao/${token}?acao=aprovar`;
-    const linkRejeitar = `${base}/aprovacao/${token}?acao=rejeitar`;
-
-    const nomeEtapa = (etapa as any).configuracao_fluxo?.nome_etapa ?? "Aprovação";
-    const valorFmt =
-      solicitacao?.valor != null
-        ? Number(solicitacao.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-        : null;
-
-    const html = `
-      <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #16233a; line-height: 1.55;">
-        <p style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6b7a90; margin: 0 0 4px;">
-          VeschIA AIP · ${empresa?.nome ?? ""}
-        </p>
-        <h2 style="margin: 0 0 14px; font-size: 18px;">${nomeEtapa}: sua aprovação foi solicitada</h2>
-        <p style="margin: 0 0 6px;">Olá, ${papel.nome}.</p>
-        <p style="margin: 0 0 14px;">A solicitação abaixo está aguardando sua decisão:</p>
-        <table style="border-collapse: collapse; margin: 0 0 18px;">
-          <tr><td style="padding: 3px 14px 3px 0; color: #6b7a90;">Solicitação</td><td style="padding: 3px 0;">#${solicitacao?.numero} · ${solicitacao?.titulo ?? ""}</td></tr>
-          ${solicitacao?.fornecedor_nome ? `<tr><td style="padding: 3px 14px 3px 0; color: #6b7a90;">Fornecedor</td><td style="padding: 3px 0;">${solicitacao.fornecedor_nome}</td></tr>` : ""}
-          ${valorFmt ? `<tr><td style="padding: 3px 14px 3px 0; color: #6b7a90;">Valor</td><td style="padding: 3px 0; font-weight: bold;">${valorFmt}</td></tr>` : ""}
-        </table>
-        <p style="margin: 0 0 4px; font-weight: bold; color: #16233a;">Para aprovar:</p>
-        <p style="margin: 0 0 14px;"><a href="${linkAprovar}" style="color: #1a73e8;">Clique aqui para aprovar esta solicitação</a></p>
-        <p style="margin: 0 0 4px; font-weight: bold; color: #16233a;">Para rejeitar:</p>
-        <p style="margin: 0 0 18px;"><a href="${linkRejeitar}" style="color: #1a73e8;">Clique aqui para rejeitar esta solicitação</a></p>
-        <p style="margin: 0; font-size: 12px; color: #6b7a90;">
-          Os links abrem uma tela com os detalhes, onde você confirma a decisão. Válidos por 7 dias e por um único uso.
-        </p>
-      </div>
-    `;
-
-    const resp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM || "VeschIA AIP <onboarding@resend.dev>",
-        to: [papel.email],
-        subject: `${nomeEtapa}: solicitação #${solicitacao?.numero} aguarda sua decisão`,
-        html,
-      }),
-    });
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`Erro ao enviar o e-mail (${resp.status}): ${txt.slice(0, 200)}`);
+    if (!resultado.avisoEnviadoPara) {
+      throw new Error("Não foi possível enviar: verifique se o papel responsável tem e-mail cadastrado na Configuração do fluxo.");
     }
-
-    return { enviadoPara: papel.email };
+    return { enviadoPara: resultado.avisoEnviadoPara };
   });
-
 
 const motorSchema = z.object({ solicitacaoId: z.string() });
 
@@ -305,12 +216,12 @@ function useEtapasExecucao(solicitacaoId: string, empresaId: string, produto: st
 
 
 /** Botão que dispara (ou reenvia) o aviso por e-mail pro responsável da etapa. */
-function BotaoNotificar({ etapaId }: { etapaId: string }) {
+function BotaoNotificar({ etapaId, solicitacaoId }: { etapaId: string; solicitacaoId: string }) {
   const [msg, setMsg] = React.useState<string | null>(null);
   const [erro, setErro] = React.useState<string | null>(null);
 
   const notificarMut = useMutation({
-    mutationFn: async () => notificarAprovador({ data: { etapaExecucaoId: etapaId } }),
+    mutationFn: async () => reenviarAviso({ data: { etapaExecucaoId: etapaId, solicitacaoId } }),
     onSuccess: (res) => {
       setErro(null);
       setMsg(`E-mail enviado para ${res.enviadoPara}`);
@@ -467,8 +378,8 @@ function SolicitacaoDetailPage() {
                       <SkipForward className="size-3.5 mr-1" /> Pular etapa
                     </Button>
                   )}
-                  {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && !etapaAnteriorPendente && (
-                    <BotaoNotificar etapaId={etapa.id} />
+                  {isPendente && !isIa && !isSistema && !isElaboracaoContrato && !etapaAnteriorPendente && (
+                    <BotaoNotificar etapaId={etapa.id} solicitacaoId={id} />
                   )}
                   {isPendente && !isIa && !isSistema && !isNegociacao && !isElaboracaoContrato && (
                     <div className="flex gap-2 shrink-0">
