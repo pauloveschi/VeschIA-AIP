@@ -28,6 +28,7 @@ const carregarAprovacao = createServerFn({ method: "POST" })
       .from("aprovacao_tokens")
       .select("id, etapa_execucao_id, expira_em, usado_em, decisao")
       .eq("token", data.token)
+      .eq("tipo", "decisao")
       .maybeSingle();
 
     if (!registro) return { estado: "invalido" as const };
@@ -102,6 +103,7 @@ const registrarDecisao = createServerFn({ method: "POST" })
       .from("aprovacao_tokens")
       .select("id, etapa_execucao_id, expira_em, usado_em")
       .eq("token", data.token)
+      .eq("tipo", "decisao")
       .maybeSingle();
 
     if (!registro) throw new Error("Link inválido.");
