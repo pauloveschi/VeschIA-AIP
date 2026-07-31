@@ -25,6 +25,7 @@ import { Route as ProdutoEmpresaNegociacaoIdRouteImport } from './routes/$produt
 import { Route as ProdutoEmpresaContratoIdRouteImport } from './routes/$produto.$empresa.contrato.$id'
 import { Route as AprovacaoTokenRouteImport } from './routes/aprovacao.$token'
 import { Route as NegociacaoExternaTokenRouteImport } from './routes/negociacao-externa.$token'
+import { Route as ApiRotinaDiariaRouteImport } from './routes/api.rotina-diaria'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -111,6 +112,11 @@ const NegociacaoExternaTokenRoute = NegociacaoExternaTokenRouteImport.update({
   path: '/negociacao-externa/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRotinaDiariaRoute = ApiRotinaDiariaRouteImport.update({
+  id: '/api/rotina-diaria',
+  path: '/api/rotina-diaria',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
   '/aprovacao/$token': typeof AprovacaoTokenRoute
   '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
+  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
   '/aprovacao/$token': typeof AprovacaoTokenRoute
   '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
+  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
   '/aprovacao/$token': typeof AprovacaoTokenRoute
   '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
+  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/contrato/$id'
     | '/aprovacao/$token'
     | '/negociacao-externa/$token'
+    | '/api/rotina-diaria'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/contrato/$id'
     | '/aprovacao/$token'
     | '/negociacao-externa/$token'
+    | '/api/rotina-diaria'
   id:
     | '__root__'
     | '/'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/$produto/$empresa/contrato/$id'
     | '/aprovacao/$token'
     | '/negociacao-externa/$token'
+    | '/api/rotina-diaria'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,6 +239,7 @@ export interface RootRouteChildren {
   SuperadminRoute: typeof SuperadminRoute
   AprovacaoTokenRoute: typeof AprovacaoTokenRoute
   NegociacaoExternaTokenRoute: typeof NegociacaoExternaTokenRoute
+  ApiRotinaDiariaRoute: typeof ApiRotinaDiariaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -343,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NegociacaoExternaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rotina-diaria': {
+      id: '/api/rotina-diaria'
+      path: '/api/rotina-diaria'
+      fullPath: '/api/rotina-diaria'
+      preLoaderRoute: typeof ApiRotinaDiariaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -404,6 +424,7 @@ const rootRouteChildren: RootRouteChildren = {
   SuperadminRoute: SuperadminRoute,
   AprovacaoTokenRoute: AprovacaoTokenRoute,
   NegociacaoExternaTokenRoute: NegociacaoExternaTokenRoute,
+  ApiRotinaDiariaRoute: ApiRotinaDiariaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
