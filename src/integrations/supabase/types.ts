@@ -7,11 +7,57 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      aprovacao_tokens: {
+        Row: {
+          created_at: string
+          decisao: string | null
+          enviado_para: string | null
+          etapa_execucao_id: string
+          expira_em: string
+          id: string
+          tipo: string
+          token: string
+          usado_em: string | null
+        }
+        Insert: {
+          created_at?: string
+          decisao?: string | null
+          enviado_para?: string | null
+          etapa_execucao_id: string
+          expira_em: string
+          id?: string
+          tipo?: string
+          token: string
+          usado_em?: string | null
+        }
+        Update: {
+          created_at?: string
+          decisao?: string | null
+          enviado_para?: string | null
+          etapa_execucao_id?: string
+          expira_em?: string
+          id?: string
+          tipo?: string
+          token?: string
+          usado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aprovacao_tokens_etapa_execucao_id_fkey"
+            columns: ["etapa_execucao_id"]
+            isOneToOne: false
+            referencedRelation: "etapas_execucao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracao_fluxo: {
         Row: {
           ativo: boolean
@@ -77,40 +123,70 @@ export type Database = {
       }
       contratos: {
         Row: {
+          alerta_previo_enviado_em: string | null
+          centro_custo: string | null
           created_at: string | null
+          data_inicio: string | null
+          data_termino: string | null
           empresa_id: string
           fase_atual_id: string | null
+          fornecedor_documento: string | null
           fornecedor_nome: string | null
           id: string
           numero: number
+          objeto: string | null
+          renovacao_ativada_em: string | null
+          responsavel_papel_id: string | null
+          solicitacao_id: string | null
           status: string
           titulo: string
           updated_at: string | null
           valor: number | null
+          vigencia_dias: number | null
         }
         Insert: {
+          alerta_previo_enviado_em?: string | null
+          centro_custo?: string | null
           created_at?: string | null
+          data_inicio?: string | null
+          data_termino?: string | null
           empresa_id: string
           fase_atual_id?: string | null
+          fornecedor_documento?: string | null
           fornecedor_nome?: string | null
           id?: string
           numero?: number
+          objeto?: string | null
+          renovacao_ativada_em?: string | null
+          responsavel_papel_id?: string | null
+          solicitacao_id?: string | null
           status?: string
           titulo: string
           updated_at?: string | null
           valor?: number | null
+          vigencia_dias?: number | null
         }
         Update: {
+          alerta_previo_enviado_em?: string | null
+          centro_custo?: string | null
           created_at?: string | null
+          data_inicio?: string | null
+          data_termino?: string | null
           empresa_id?: string
           fase_atual_id?: string | null
+          fornecedor_documento?: string | null
           fornecedor_nome?: string | null
           id?: string
           numero?: number
+          objeto?: string | null
+          renovacao_ativada_em?: string | null
+          responsavel_papel_id?: string | null
+          solicitacao_id?: string | null
           status?: string
           titulo?: string
           updated_at?: string | null
           valor?: number | null
+          vigencia_dias?: number | null
         }
         Relationships: [
           {
@@ -125,6 +201,20 @@ export type Database = {
             columns: ["fase_atual_id"]
             isOneToOne: false
             referencedRelation: "fases_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_responsavel_papel_id_fkey"
+            columns: ["responsavel_papel_id"]
+            isOneToOne: false
+            referencedRelation: "papeis_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: true
+            referencedRelation: "solicitacoes"
             referencedColumns: ["id"]
           },
         ]
@@ -203,9 +293,18 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string | null
+          email_cadastro: string | null
+          endereco_bairro: string | null
+          endereco_cep: string | null
+          endereco_cidade: string | null
+          endereco_complemento: string | null
+          endereco_estado: string | null
+          endereco_logradouro: string | null
+          endereco_numero: string | null
           id: string
           modelo_negocio: string | null
           nome: string
+          razao_social: string | null
           segmento_setorial: string | null
           slug: string
           status: string
@@ -214,9 +313,18 @@ export type Database = {
         Insert: {
           cnpj?: string | null
           created_at?: string | null
+          email_cadastro?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
           id?: string
           modelo_negocio?: string | null
           nome: string
+          razao_social?: string | null
           segmento_setorial?: string | null
           slug: string
           status?: string
@@ -225,9 +333,18 @@ export type Database = {
         Update: {
           cnpj?: string | null
           created_at?: string | null
+          email_cadastro?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
           id?: string
           modelo_negocio?: string | null
           nome?: string
+          razao_social?: string | null
           segmento_setorial?: string | null
           slug?: string
           status?: string
@@ -405,18 +522,134 @@ export type Database = {
           },
         ]
       }
+      negociacoes: {
+        Row: {
+          condicoes: string | null
+          data_cadastro: string
+          data_inicio: string | null
+          data_termino: string | null
+          detalhes_servico: string | null
+          email_contratado: string | null
+          email_contratante: string | null
+          fornecedor_bairro: string | null
+          fornecedor_cep: string | null
+          fornecedor_cidade: string | null
+          fornecedor_complemento: string | null
+          fornecedor_documento: string
+          fornecedor_estado: string | null
+          fornecedor_estado_civil: string | null
+          fornecedor_logradouro: string | null
+          fornecedor_nacionalidade: string | null
+          fornecedor_nome: string
+          fornecedor_numero: string | null
+          fornecedor_profissao: string | null
+          id: string
+          justificativa_escolha: string | null
+          objeto_contrato: string | null
+          solicitacao_id: string
+          status: string
+          testemunha_1_email: string | null
+          testemunha_1_nome: string | null
+          testemunha_2_email: string | null
+          testemunha_2_nome: string | null
+          tipo_pessoa: string
+          updated_at: string
+          valor_negociado: number | null
+          vigencia_dias: number | null
+        }
+        Insert: {
+          condicoes?: string | null
+          data_cadastro?: string
+          data_inicio?: string | null
+          data_termino?: string | null
+          detalhes_servico?: string | null
+          email_contratado?: string | null
+          email_contratante?: string | null
+          fornecedor_bairro?: string | null
+          fornecedor_cep?: string | null
+          fornecedor_cidade?: string | null
+          fornecedor_complemento?: string | null
+          fornecedor_documento: string
+          fornecedor_estado?: string | null
+          fornecedor_estado_civil?: string | null
+          fornecedor_logradouro?: string | null
+          fornecedor_nacionalidade?: string | null
+          fornecedor_nome: string
+          fornecedor_numero?: string | null
+          fornecedor_profissao?: string | null
+          id?: string
+          justificativa_escolha?: string | null
+          objeto_contrato?: string | null
+          solicitacao_id: string
+          status?: string
+          testemunha_1_email?: string | null
+          testemunha_1_nome?: string | null
+          testemunha_2_email?: string | null
+          testemunha_2_nome?: string | null
+          tipo_pessoa: string
+          updated_at?: string
+          valor_negociado?: number | null
+          vigencia_dias?: number | null
+        }
+        Update: {
+          condicoes?: string | null
+          data_cadastro?: string
+          data_inicio?: string | null
+          data_termino?: string | null
+          detalhes_servico?: string | null
+          email_contratado?: string | null
+          email_contratante?: string | null
+          fornecedor_bairro?: string | null
+          fornecedor_cep?: string | null
+          fornecedor_cidade?: string | null
+          fornecedor_complemento?: string | null
+          fornecedor_documento?: string
+          fornecedor_estado?: string | null
+          fornecedor_estado_civil?: string | null
+          fornecedor_logradouro?: string | null
+          fornecedor_nacionalidade?: string | null
+          fornecedor_nome?: string
+          fornecedor_numero?: string | null
+          fornecedor_profissao?: string | null
+          id?: string
+          justificativa_escolha?: string | null
+          objeto_contrato?: string | null
+          solicitacao_id?: string
+          status?: string
+          testemunha_1_email?: string | null
+          testemunha_1_nome?: string | null
+          testemunha_2_email?: string | null
+          testemunha_2_nome?: string | null
+          tipo_pessoa?: string
+          updated_at?: string
+          valor_negociado?: number | null
+          vigencia_dias?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negociacoes_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       papeis_empresa: {
         Row: {
+          email: string | null
           empresa_id: string
           id: string
           nome: string
         }
         Insert: {
+          email?: string | null
           empresa_id: string
           id?: string
           nome: string
         }
         Update: {
+          email?: string | null
           empresa_id?: string
           id?: string
           nome?: string
@@ -454,15 +687,19 @@ export type Database = {
       }
       solicitacoes: {
         Row: {
+          area: string | null
+          centro_custo: string | null
           contrato_id: string | null
           created_at: string | null
           data_vencimento: string | null
+          descricao: string | null
           empresa_id: string
           fase_id: string | null
           fornecedor_nome: string | null
           id: string
           numero: number
           produto: string
+          ressalva_juridica: string | null
           solicitante_id: string | null
           status: string
           titulo: string
@@ -470,15 +707,19 @@ export type Database = {
           valor: number | null
         }
         Insert: {
+          area?: string | null
+          centro_custo?: string | null
           contrato_id?: string | null
           created_at?: string | null
           data_vencimento?: string | null
+          descricao?: string | null
           empresa_id: string
           fase_id?: string | null
           fornecedor_nome?: string | null
           id?: string
           numero?: number
           produto: string
+          ressalva_juridica?: string | null
           solicitante_id?: string | null
           status?: string
           titulo: string
@@ -486,15 +727,19 @@ export type Database = {
           valor?: number | null
         }
         Update: {
+          area?: string | null
+          centro_custo?: string | null
           contrato_id?: string | null
           created_at?: string | null
           data_vencimento?: string | null
+          descricao?: string | null
           empresa_id?: string
           fase_id?: string | null
           fornecedor_nome?: string | null
           id?: string
           numero?: number
           produto?: string
+          ressalva_juridica?: string | null
           solicitante_id?: string | null
           status?: string
           titulo?: string
