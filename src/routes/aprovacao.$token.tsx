@@ -75,6 +75,22 @@ const carregarAprovacao = createServerFn({ method: "POST" })
       urlContrato = signed?.signedUrl ?? null;
     }
 
+    // Traz o resultado da negociação: quem foi escolhido, por quê, e quem mais concorreu.
+    // Sem isso o aprovador decide sem enxergar a comparação que sustentou a escolha.
+    const { data: negociacoes } = await supabaseAdmin
+      .from("negociacoes")
+      .select("fornecedor_nome, valor_negociado, status, justificativa_escolha")
+      .eq("solicitacao_id", etapa.solicitacao_id)
+      .order("data_cadastro", { ascending: true });
+
+    const escolhida = (negociacoes ?? []).find((n: any) => n.status === "escolhida");
+    const descartadas = (negociacoes ?? [])
+      .filter((n: any) => n.status === "descartada")
+      .map((n: any) => ({
+        nome: n.fornecedor_nome,
+        valor: n.valor_negociado != null ? Number(n.valor_negociado) : null,
+      }));
+
     return {
       estado: "valido" as const,
       etapaNome: (etapa as any).configuracao_fluxo?.nome_etapa ?? "Aprovação",
@@ -90,6 +106,9 @@ const carregarAprovacao = createServerFn({ method: "POST" })
         valor: solicitacao?.valor != null ? Number(solicitacao.valor) : null,
       },
       contrato: doc ? { nome: doc.nome_arquivo, url: urlContrato } : null,
+      negociacao: escolhida
+        ? { justificativa: escolhida.justificativa_escolha ?? null, descartadas }
+        : null,
     };
   });
 
@@ -266,6 +285,33 @@ function AprovacaoPage() {
             </>
           )}
         </dl>
+
+        {data.negociacao && (data.negociacao.justificativa || data.negociacao.descartadas.length > 0) && (
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resultado da negociação</p>
+            {data.negociacao.justificativa && (
+              <p className="text-[13px]">
+                <span className="text-muted-foreground">Justificativa da escolha: </span>
+                {data.negociacao.justificativa}
+              </p>
+            )}
+            {data.negociacao.descartadas.length > 0 && (
+              <div className="text-[12.5px]">
+                <p className="text-muted-foreground mb-0.5">Também concorreram:</p>
+                <ul className="space-y-0.5">
+                  {data.negociacao.descartadas.map((d, i) => (
+                    <li key={i} className="flex justify-between gap-3">
+                      <span>{d.nome}</span>
+                      <span className="text-muted-foreground">
+                        {d.valor != null ? d.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "sem valor"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {data.contrato?.url && (
           <a
