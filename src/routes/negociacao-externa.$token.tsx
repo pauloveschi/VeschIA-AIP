@@ -201,7 +201,7 @@ function Aviso({ titulo, texto }: { titulo: string; texto: string }) {
 function NegociacaoExternaPage() {
   const { token } = Route.useParams();
 
-  const { data: ctx, isLoading } = useQuery({
+  const { data: ctx, isLoading, refetch: recarregarContexto } = useQuery({
     queryKey: ["negociacao-externa-ctx", token],
     queryFn: async () => carregarContexto({ data: { token } }),
   });
@@ -216,6 +216,8 @@ function NegociacaoExternaPage() {
     },
     escolher: async (negociacaoId, justificativa) => {
       await escolherExterno({ data: { token, negociacaoId, justificativa } });
+      // Depois de escolher, a etapa fecha: recarrega o contexto pra tela virar somente leitura.
+      await recarregarContexto();
     },
   };
 
