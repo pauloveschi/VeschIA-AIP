@@ -15,6 +15,16 @@
 
 const ETAPAS_CONTINUAS = ["Execução", "Monitoramento"];
 
+/**
+ * Etapas em que a pessoa não decide "sim ou não": ela precisa entrar no sistema e
+ * produzir alguma coisa (cadastrar fornecedores, escolher proposta). Nessas, o e-mail
+ * leva pra tela de trabalho dentro do sistema, não pra tela de aprovação por token,
+ * senão daria pra "aprovar" uma etapa sem ter feito o trabalho dela.
+ */
+const ETAPAS_DE_TRABALHO: Record<string, string> = {
+  "Negociação Comercial": "negociacao",
+};
+
 interface EtapaCarregada {
   id: string;
   status: string;
@@ -83,9 +93,8 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
   const { count } = await admin
     .from("aprovacao_tokens")
     .select("id", { count: "exact", head: true })
-    .eq("etapa_execucao_id", etapa.id)
-    .is("usado_em", null);
-  if ((count ?? 0) > 0) return null; // já existe aviso pendente pra essa etapa
+    .eq("etapa_execucao_id", etapa.id);
+  if ((count ?? 0) > 0) return null; // já foi avisado sobre essa etapa
 
   const papelId = etapa.papel_resolvido_id ?? etapa.papel_id;
   if (!papelId) return null;
@@ -108,19 +117,45 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
     .eq("id", solicitacao?.empresa_id ?? "")
     .maybeSingle();
 
-  const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-  const expiraEm = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { error: eToken } = await admin.from("aprovacao_tokens").insert({
-    token,
-    etapa_execucao_id: etapa.id,
-    enviado_para: papel.email,
-    expira_em: expiraEm,
-  });
-  if (eToken) return null;
-
   const base = process.env.APP_BASE_URL || "https://veschia-aip.vercel.app";
-  const link = `${base}/aprovacao/${token}`;
+  const rotaTrabalho = ETAPAS_DE_TRABALHO[etapa.nome_etapa];
+  const eTrabalho = !!rotaTrabalho;
+
+  let link: string;
+
+  if (eTrabalho) {
+    // Etapa de trabalho: manda direto pra tela dentro do sistema (exige login),
+    // sem token, porque não existe "aprovar" aqui, existe fazer o trabalho.
+    const { data: dadosEmpresa } = await admin
+      .from("empresas_clientes")
+      .select("slug")
+      .eq("id", solicitacao?.empresa_id ?? "")
+      .maybeSingle();
+    const { data: sol } = await admin.from("solicitacoes").select("produto").eq("id", solicitacaoId).single();
+    link = `${base}/${sol?.produto ?? "aiprocont"}/${dadosEmpresa?.slug ?? ""}/${rotaTrabalho}/${solicitacaoId}`;
+
+    // Registra que o aviso foi mandado, pra não repetir a cada passagem do motor.
+    await admin.from("aprovacao_tokens").insert({
+      token: `trabalho-${etapa.id}`,
+      etapa_execucao_id: etapa.id,
+      enviado_para: papel.email,
+      expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      usado_em: new Date().toISOString(),
+    });
+  } else {
+    const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+    const expiraEm = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: eToken } = await admin.from("aprovacao_tokens").insert({
+      token,
+      etapa_execucao_id: etapa.id,
+      enviado_para: papel.email,
+      expira_em: expiraEm,
+    });
+    if (eToken) return null;
+
+    link = `${base}/aprovacao/${token}`;
+  }
 
   const valorFmt =
     solicitacao?.valor != null
@@ -132,9 +167,9 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
       <p style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6b7a90; margin: 0 0 4px;">
         VeschIA AIP · ${empresa?.nome ?? ""}
       </p>
-      <h2 style="margin: 0 0 14px; font-size: 18px;">${etapa.nome_etapa}: sua decisão foi solicitada</h2>
+      <h2 style="margin: 0 0 14px; font-size: 18px;">${etapa.nome_etapa}: ${eTrabalho ? "sua ação é necessária" : "sua decisão foi solicitada"}</h2>
       <p style="margin: 0 0 6px;">Olá, ${papel.nome}.</p>
-      <p style="margin: 0 0 14px;">A solicitação abaixo está aguardando você:</p>
+      <p style="margin: 0 0 14px;">${eTrabalho ? "A solicitação abaixo está esperando você trabalhar nela:" : "A solicitação abaixo está aguardando você:"}</p>
       <table style="border-collapse: collapse; margin: 0 0 18px;">
         <tr><td style="padding: 3px 14px 3px 0; color: #6b7a90;">Solicitação</td><td style="padding: 3px 0;">#${solicitacao?.numero} · ${solicitacao?.titulo ?? ""}</td></tr>
         ${solicitacao?.fornecedor_nome ? `<tr><td style="padding: 3px 14px 3px 0; color: #6b7a90;">Fornecedor</td><td style="padding: 3px 0;">${solicitacao.fornecedor_nome}</td></tr>` : ""}
@@ -142,13 +177,15 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
       </table>
       <p style="margin: 0 0 18px;">
         <a href="${link}" style="display: inline-block; background: #16233a; color: #ffffff; text-decoration: none; padding: 11px 22px; border-radius: 6px;">
-          Abrir e decidir
+          ${eTrabalho ? "Abrir no sistema" : "Abrir e decidir"}
         </a>
       </p>
       <p style="margin: 0 0 4px; font-size: 12px; color: #6b7a90;">Ou copie este endereço no navegador:</p>
       <p style="margin: 0 0 18px; font-size: 12px;"><a href="${link}" style="color: #1a73e8;">${link}</a></p>
       <p style="margin: 0; font-size: 12px; color: #6b7a90;">
-        O link abre uma tela com os detalhes, onde você aprova ou rejeita. Válido por 7 dias e por um único uso.
+        ${eTrabalho
+          ? "O link abre a tela de trabalho dentro do sistema, onde você precisa estar logado."
+          : "O link abre uma tela com os detalhes, onde você aprova ou rejeita. Válido por 7 dias e por um único uso."}
       </p>
     </div>
   `;
@@ -159,7 +196,7 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
     body: JSON.stringify({
       from: process.env.RESEND_FROM || "VeschIA AIP <onboarding@resend.dev>",
       to: [papel.email],
-      subject: `${etapa.nome_etapa}: solicitação #${solicitacao?.numero} aguarda sua decisão`,
+      subject: `${etapa.nome_etapa}: solicitação #${solicitacao?.numero} aguarda ${eTrabalho ? "sua ação" : "sua decisão"}`,
       html,
     }),
   });
