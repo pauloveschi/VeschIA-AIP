@@ -15,17 +15,19 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SuperadminRouteImport } from './routes/superadmin'
 import { Route as ProdutoIndexRouteImport } from './routes/$produto.index'
 import { Route as ProdutoEmpresaRouteImport } from './routes/$produto.$empresa'
+import { Route as ApiRotinaDiariaRouteImport } from './routes/api.rotina-diaria'
+import { Route as AprovacaoTokenRouteImport } from './routes/aprovacao.$token'
+import { Route as JuridicoTokenRouteImport } from './routes/juridico.$token'
+import { Route as NegociacaoExternaTokenRouteImport } from './routes/negociacao-externa.$token'
+import { Route as RenovacaoTokenRouteImport } from './routes/renovacao.$token'
 import { Route as ProdutoEmpresaIndexRouteImport } from './routes/$produto.$empresa.index'
 import { Route as ProdutoEmpresaAuthRouteImport } from './routes/$produto.$empresa.auth'
 import { Route as ProdutoEmpresaConfiguracaoRouteImport } from './routes/$produto.$empresa.configuracao'
 import { Route as ProdutoEmpresaContratosRouteImport } from './routes/$produto.$empresa.contratos'
-import { Route as ProdutoEmpresaContratosIdRouteImport } from './routes/$produto.$empresa.contratos.$id'
-import { Route as ProdutoEmpresaSolicitacoesIdRouteImport } from './routes/$produto.$empresa.solicitacoes.$id'
-import { Route as ProdutoEmpresaNegociacaoIdRouteImport } from './routes/$produto.$empresa.negociacao.$id'
 import { Route as ProdutoEmpresaContratoIdRouteImport } from './routes/$produto.$empresa.contrato.$id'
-import { Route as AprovacaoTokenRouteImport } from './routes/aprovacao.$token'
-import { Route as NegociacaoExternaTokenRouteImport } from './routes/negociacao-externa.$token'
-import { Route as ApiRotinaDiariaRouteImport } from './routes/api.rotina-diaria'
+import { Route as ProdutoEmpresaContratosIdRouteImport } from './routes/$produto.$empresa.contratos.$id'
+import { Route as ProdutoEmpresaNegociacaoIdRouteImport } from './routes/$produto.$empresa.negociacao.$id'
+import { Route as ProdutoEmpresaSolicitacoesIdRouteImport } from './routes/$produto.$empresa.solicitacoes.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +59,31 @@ const ProdutoEmpresaRoute = ProdutoEmpresaRouteImport.update({
   path: '/$empresa',
   getParentRoute: () => ProdutoRoute,
 } as any)
+const ApiRotinaDiariaRoute = ApiRotinaDiariaRouteImport.update({
+  id: '/api/rotina-diaria',
+  path: '/api/rotina-diaria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AprovacaoTokenRoute = AprovacaoTokenRouteImport.update({
+  id: '/aprovacao/$token',
+  path: '/aprovacao/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JuridicoTokenRoute = JuridicoTokenRouteImport.update({
+  id: '/juridico/$token',
+  path: '/juridico/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NegociacaoExternaTokenRoute = NegociacaoExternaTokenRouteImport.update({
+  id: '/negociacao-externa/$token',
+  path: '/negociacao-externa/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RenovacaoTokenRoute = RenovacaoTokenRouteImport.update({
+  id: '/renovacao/$token',
+  path: '/renovacao/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutoEmpresaIndexRoute = ProdutoEmpresaIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -78,17 +105,17 @@ const ProdutoEmpresaContratosRoute = ProdutoEmpresaContratosRouteImport.update({
   path: '/contratos',
   getParentRoute: () => ProdutoEmpresaRoute,
 } as any)
+const ProdutoEmpresaContratoIdRoute =
+  ProdutoEmpresaContratoIdRouteImport.update({
+    id: '/contrato/$id',
+    path: '/contrato/$id',
+    getParentRoute: () => ProdutoEmpresaRoute,
+  } as any)
 const ProdutoEmpresaContratosIdRoute =
   ProdutoEmpresaContratosIdRouteImport.update({
     id: '/$id',
     path: '/$id',
     getParentRoute: () => ProdutoEmpresaContratosRoute,
-  } as any)
-const ProdutoEmpresaSolicitacoesIdRoute =
-  ProdutoEmpresaSolicitacoesIdRouteImport.update({
-    id: '/solicitacoes/$id',
-    path: '/solicitacoes/$id',
-    getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
 const ProdutoEmpresaNegociacaoIdRoute =
   ProdutoEmpresaNegociacaoIdRouteImport.update({
@@ -96,27 +123,12 @@ const ProdutoEmpresaNegociacaoIdRoute =
     path: '/negociacao/$id',
     getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
-const ProdutoEmpresaContratoIdRoute =
-  ProdutoEmpresaContratoIdRouteImport.update({
-    id: '/contrato/$id',
-    path: '/contrato/$id',
+const ProdutoEmpresaSolicitacoesIdRoute =
+  ProdutoEmpresaSolicitacoesIdRouteImport.update({
+    id: '/solicitacoes/$id',
+    path: '/solicitacoes/$id',
     getParentRoute: () => ProdutoEmpresaRoute,
   } as any)
-const AprovacaoTokenRoute = AprovacaoTokenRouteImport.update({
-  id: '/aprovacao/$token',
-  path: '/aprovacao/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NegociacaoExternaTokenRoute = NegociacaoExternaTokenRouteImport.update({
-  id: '/negociacao-externa/$token',
-  path: '/negociacao-externa/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiRotinaDiariaRoute = ApiRotinaDiariaRouteImport.update({
-  id: '/api/rotina-diaria',
-  path: '/api/rotina-diaria',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,35 +136,39 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/superadmin': typeof SuperadminRoute
   '/$produto/$empresa': typeof ProdutoEmpresaRouteWithChildren
+  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
+  '/aprovacao/$token': typeof AprovacaoTokenRoute
+  '/juridico/$token': typeof JuridicoTokenRoute
+  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
+  '/renovacao/$token': typeof RenovacaoTokenRoute
   '/$produto/': typeof ProdutoIndexRoute
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
   '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa/': typeof ProdutoEmpresaIndexRoute
-  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
-  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
-  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
-  '/aprovacao/$token': typeof AprovacaoTokenRoute
-  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
-  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
+  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
+  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
+  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/superadmin': typeof SuperadminRoute
+  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
+  '/aprovacao/$token': typeof AprovacaoTokenRoute
+  '/juridico/$token': typeof JuridicoTokenRoute
+  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
+  '/renovacao/$token': typeof RenovacaoTokenRoute
   '/$produto': typeof ProdutoIndexRoute
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
   '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa': typeof ProdutoEmpresaIndexRoute
-  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
-  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
-  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
-  '/aprovacao/$token': typeof AprovacaoTokenRoute
-  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
-  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
+  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
+  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
+  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,18 +177,20 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/superadmin': typeof SuperadminRoute
   '/$produto/$empresa': typeof ProdutoEmpresaRouteWithChildren
+  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
+  '/aprovacao/$token': typeof AprovacaoTokenRoute
+  '/juridico/$token': typeof JuridicoTokenRoute
+  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
+  '/renovacao/$token': typeof RenovacaoTokenRoute
   '/$produto/': typeof ProdutoIndexRoute
   '/$produto/$empresa/auth': typeof ProdutoEmpresaAuthRoute
   '/$produto/$empresa/configuracao': typeof ProdutoEmpresaConfiguracaoRoute
   '/$produto/$empresa/contratos': typeof ProdutoEmpresaContratosRouteWithChildren
   '/$produto/$empresa/': typeof ProdutoEmpresaIndexRoute
-  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
-  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
-  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
   '/$produto/$empresa/contrato/$id': typeof ProdutoEmpresaContratoIdRoute
-  '/aprovacao/$token': typeof AprovacaoTokenRoute
-  '/negociacao-externa/$token': typeof NegociacaoExternaTokenRoute
-  '/api/rotina-diaria': typeof ApiRotinaDiariaRoute
+  '/$produto/$empresa/contratos/$id': typeof ProdutoEmpresaContratosIdRoute
+  '/$produto/$empresa/negociacao/$id': typeof ProdutoEmpresaNegociacaoIdRoute
+  '/$produto/$empresa/solicitacoes/$id': typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -182,35 +200,39 @@ export interface FileRouteTypes {
     | '/auth'
     | '/superadmin'
     | '/$produto/$empresa'
+    | '/api/rotina-diaria'
+    | '/aprovacao/$token'
+    | '/juridico/$token'
+    | '/negociacao-externa/$token'
+    | '/renovacao/$token'
     | '/$produto/'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
     | '/$produto/$empresa/contratos'
     | '/$produto/$empresa/'
-    | '/$produto/$empresa/contratos/$id'
-    | '/$produto/$empresa/solicitacoes/$id'
-    | '/$produto/$empresa/negociacao/$id'
     | '/$produto/$empresa/contrato/$id'
-    | '/aprovacao/$token'
-    | '/negociacao-externa/$token'
-    | '/api/rotina-diaria'
+    | '/$produto/$empresa/contratos/$id'
+    | '/$produto/$empresa/negociacao/$id'
+    | '/$produto/$empresa/solicitacoes/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/superadmin'
+    | '/api/rotina-diaria'
+    | '/aprovacao/$token'
+    | '/juridico/$token'
+    | '/negociacao-externa/$token'
+    | '/renovacao/$token'
     | '/$produto'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
     | '/$produto/$empresa/contratos'
     | '/$produto/$empresa'
-    | '/$produto/$empresa/contratos/$id'
-    | '/$produto/$empresa/solicitacoes/$id'
-    | '/$produto/$empresa/negociacao/$id'
     | '/$produto/$empresa/contrato/$id'
-    | '/aprovacao/$token'
-    | '/negociacao-externa/$token'
-    | '/api/rotina-diaria'
+    | '/$produto/$empresa/contratos/$id'
+    | '/$produto/$empresa/negociacao/$id'
+    | '/$produto/$empresa/solicitacoes/$id'
   id:
     | '__root__'
     | '/'
@@ -218,18 +240,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/superadmin'
     | '/$produto/$empresa'
+    | '/api/rotina-diaria'
+    | '/aprovacao/$token'
+    | '/juridico/$token'
+    | '/negociacao-externa/$token'
+    | '/renovacao/$token'
     | '/$produto/'
     | '/$produto/$empresa/auth'
     | '/$produto/$empresa/configuracao'
     | '/$produto/$empresa/contratos'
     | '/$produto/$empresa/'
-    | '/$produto/$empresa/contratos/$id'
-    | '/$produto/$empresa/solicitacoes/$id'
-    | '/$produto/$empresa/negociacao/$id'
     | '/$produto/$empresa/contrato/$id'
-    | '/aprovacao/$token'
-    | '/negociacao-externa/$token'
-    | '/api/rotina-diaria'
+    | '/$produto/$empresa/contratos/$id'
+    | '/$produto/$empresa/negociacao/$id'
+    | '/$produto/$empresa/solicitacoes/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -237,9 +261,11 @@ export interface RootRouteChildren {
   ProdutoRoute: typeof ProdutoRouteWithChildren
   AuthRoute: typeof AuthRoute
   SuperadminRoute: typeof SuperadminRoute
-  AprovacaoTokenRoute: typeof AprovacaoTokenRoute
-  NegociacaoExternaTokenRoute: typeof NegociacaoExternaTokenRoute
   ApiRotinaDiariaRoute: typeof ApiRotinaDiariaRoute
+  AprovacaoTokenRoute: typeof AprovacaoTokenRoute
+  JuridicoTokenRoute: typeof JuridicoTokenRoute
+  NegociacaoExternaTokenRoute: typeof NegociacaoExternaTokenRoute
+  RenovacaoTokenRoute: typeof RenovacaoTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -286,6 +312,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoEmpresaRouteImport
       parentRoute: typeof ProdutoRoute
     }
+    '/api/rotina-diaria': {
+      id: '/api/rotina-diaria'
+      path: '/api/rotina-diaria'
+      fullPath: '/api/rotina-diaria'
+      preLoaderRoute: typeof ApiRotinaDiariaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aprovacao/$token': {
+      id: '/aprovacao/$token'
+      path: '/aprovacao/$token'
+      fullPath: '/aprovacao/$token'
+      preLoaderRoute: typeof AprovacaoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/juridico/$token': {
+      id: '/juridico/$token'
+      path: '/juridico/$token'
+      fullPath: '/juridico/$token'
+      preLoaderRoute: typeof JuridicoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/negociacao-externa/$token': {
+      id: '/negociacao-externa/$token'
+      path: '/negociacao-externa/$token'
+      fullPath: '/negociacao-externa/$token'
+      preLoaderRoute: typeof NegociacaoExternaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/renovacao/$token': {
+      id: '/renovacao/$token'
+      path: '/renovacao/$token'
+      fullPath: '/renovacao/$token'
+      preLoaderRoute: typeof RenovacaoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$produto/$empresa/': {
       id: '/$produto/$empresa/'
       path: '/'
@@ -314,19 +375,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoEmpresaContratosRouteImport
       parentRoute: typeof ProdutoEmpresaRoute
     }
+    '/$produto/$empresa/contrato/$id': {
+      id: '/$produto/$empresa/contrato/$id'
+      path: '/contrato/$id'
+      fullPath: '/$produto/$empresa/contrato/$id'
+      preLoaderRoute: typeof ProdutoEmpresaContratoIdRouteImport
+      parentRoute: typeof ProdutoEmpresaRoute
+    }
     '/$produto/$empresa/contratos/$id': {
       id: '/$produto/$empresa/contratos/$id'
       path: '/$id'
       fullPath: '/$produto/$empresa/contratos/$id'
       preLoaderRoute: typeof ProdutoEmpresaContratosIdRouteImport
       parentRoute: typeof ProdutoEmpresaContratosRoute
-    }
-    '/$produto/$empresa/solicitacoes/$id': {
-      id: '/$produto/$empresa/solicitacoes/$id'
-      path: '/solicitacoes/$id'
-      fullPath: '/$produto/$empresa/solicitacoes/$id'
-      preLoaderRoute: typeof ProdutoEmpresaSolicitacoesIdRouteImport
-      parentRoute: typeof ProdutoEmpresaRoute
     }
     '/$produto/$empresa/negociacao/$id': {
       id: '/$produto/$empresa/negociacao/$id'
@@ -335,33 +396,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoEmpresaNegociacaoIdRouteImport
       parentRoute: typeof ProdutoEmpresaRoute
     }
-    '/$produto/$empresa/contrato/$id': {
-      id: '/$produto/$empresa/contrato/$id'
-      path: '/contrato/$id'
-      fullPath: '/$produto/$empresa/contrato/$id'
-      preLoaderRoute: typeof ProdutoEmpresaContratoIdRouteImport
+    '/$produto/$empresa/solicitacoes/$id': {
+      id: '/$produto/$empresa/solicitacoes/$id'
+      path: '/solicitacoes/$id'
+      fullPath: '/$produto/$empresa/solicitacoes/$id'
+      preLoaderRoute: typeof ProdutoEmpresaSolicitacoesIdRouteImport
       parentRoute: typeof ProdutoEmpresaRoute
-    }
-    '/aprovacao/$token': {
-      id: '/aprovacao/$token'
-      path: '/aprovacao/$token'
-      fullPath: '/aprovacao/$token'
-      preLoaderRoute: typeof AprovacaoTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/negociacao-externa/$token': {
-      id: '/negociacao-externa/$token'
-      path: '/negociacao-externa/$token'
-      fullPath: '/negociacao-externa/$token'
-      preLoaderRoute: typeof NegociacaoExternaTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/rotina-diaria': {
-      id: '/api/rotina-diaria'
-      path: '/api/rotina-diaria'
-      fullPath: '/api/rotina-diaria'
-      preLoaderRoute: typeof ApiRotinaDiariaRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -385,9 +425,9 @@ interface ProdutoEmpresaRouteChildren {
   ProdutoEmpresaConfiguracaoRoute: typeof ProdutoEmpresaConfiguracaoRoute
   ProdutoEmpresaContratosRoute: typeof ProdutoEmpresaContratosRouteWithChildren
   ProdutoEmpresaIndexRoute: typeof ProdutoEmpresaIndexRoute
-  ProdutoEmpresaSolicitacoesIdRoute: typeof ProdutoEmpresaSolicitacoesIdRoute
-  ProdutoEmpresaNegociacaoIdRoute: typeof ProdutoEmpresaNegociacaoIdRoute
   ProdutoEmpresaContratoIdRoute: typeof ProdutoEmpresaContratoIdRoute
+  ProdutoEmpresaNegociacaoIdRoute: typeof ProdutoEmpresaNegociacaoIdRoute
+  ProdutoEmpresaSolicitacoesIdRoute: typeof ProdutoEmpresaSolicitacoesIdRoute
 }
 
 const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
@@ -395,9 +435,9 @@ const ProdutoEmpresaRouteChildren: ProdutoEmpresaRouteChildren = {
   ProdutoEmpresaConfiguracaoRoute: ProdutoEmpresaConfiguracaoRoute,
   ProdutoEmpresaContratosRoute: ProdutoEmpresaContratosRouteWithChildren,
   ProdutoEmpresaIndexRoute: ProdutoEmpresaIndexRoute,
-  ProdutoEmpresaSolicitacoesIdRoute: ProdutoEmpresaSolicitacoesIdRoute,
-  ProdutoEmpresaNegociacaoIdRoute: ProdutoEmpresaNegociacaoIdRoute,
   ProdutoEmpresaContratoIdRoute: ProdutoEmpresaContratoIdRoute,
+  ProdutoEmpresaNegociacaoIdRoute: ProdutoEmpresaNegociacaoIdRoute,
+  ProdutoEmpresaSolicitacoesIdRoute: ProdutoEmpresaSolicitacoesIdRoute,
 }
 
 const ProdutoEmpresaRouteWithChildren = ProdutoEmpresaRoute._addFileChildren(
@@ -422,9 +462,11 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoRoute: ProdutoRouteWithChildren,
   AuthRoute: AuthRoute,
   SuperadminRoute: SuperadminRoute,
-  AprovacaoTokenRoute: AprovacaoTokenRoute,
-  NegociacaoExternaTokenRoute: NegociacaoExternaTokenRoute,
   ApiRotinaDiariaRoute: ApiRotinaDiariaRoute,
+  AprovacaoTokenRoute: AprovacaoTokenRoute,
+  JuridicoTokenRoute: JuridicoTokenRoute,
+  NegociacaoExternaTokenRoute: NegociacaoExternaTokenRoute,
+  RenovacaoTokenRoute: RenovacaoTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

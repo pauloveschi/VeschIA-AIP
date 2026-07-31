@@ -83,10 +83,15 @@ interface DadosPrompt {
   dataTermino: string | null;
   vigenciaDias: number | null;
   localData: string;
+  ressalvaJuridica?: string | null;
 }
 
 function montarPrompt(input: DadosPrompt): string {
-  return `Você é um assistente jurídico que redige minutas de Contrato de Prestação de Serviços em português do Brasil, seguindo EXATAMENTE a estrutura de seções abaixo (não invente seções novas, não remova nenhuma das 6):
+  const blocoRessalva = input.ressalvaJuridica
+    ? `\n\nATENÇÃO — AJUSTE PEDIDO PELO JURÍDICO: esta é uma revisão de uma minuta anterior. O Jurídico da empresa contratante analisou a versão anterior e pediu o seguinte ajuste, que você deve aplicar à minuta (inclua, altere ou remova cláusula, valor, prazo ou objeto, conforme o pedido abaixo exigir): "${input.ressalvaJuridica}". Aplique esse ajuste mantendo o restante do contrato coerente com os dados informados.`
+    : "";
+
+  return `Você é um assistente jurídico que redige minutas de Contrato de Prestação de Serviços em português do Brasil, seguindo EXATAMENTE a estrutura de seções abaixo (não invente seções novas, não remova nenhuma das 6):${blocoRessalva}
 
 CONTRATO DE PRESTAÇÃO DE SERVIÇOS
 1. AS PARTES
@@ -151,7 +156,7 @@ Responda APENAS com o texto do contrato, em texto puro (sem markdown, sem asteri
  * Gera a minuta em PDF a partir da negociação escolhida, salva no Storage
  * e registra em `documentos`. Devolve o texto e o caminho do arquivo.
  */
-export async function gerarMinuta(admin: any, solicitacaoId: string) {
+export async function gerarMinuta(admin: any, solicitacaoId: string, ressalvaJuridica?: string | null) {
   const { gerarPdfSimples } = await import("./pdf-simples.server");
 
   const { data: solicitacao, error: eSol } = await admin
@@ -221,6 +226,7 @@ export async function gerarMinuta(admin: any, solicitacaoId: string) {
     dataTermino: negociacao.data_termino,
     vigenciaDias: negociacao.vigencia_dias,
     localData: montarLocalData(empresa.endereco_cidade ?? null, empresa.endereco_estado ?? null),
+    ressalvaJuridica,
   });
 
   const resp = await fetch(

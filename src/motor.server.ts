@@ -25,6 +25,16 @@ const ETAPAS_DE_TRABALHO: Record<string, string> = {
   "Negociação Comercial": "negociacao",
 };
 
+/**
+ * Etapas que são uma decisão (via token, sem login), mas não cabem no par genérico
+ * Aprovar/Rejeitar da tela `/aprovacao/$token`: os dois caminhos têm nomes e
+ * consequências diferentes de "aprovado/rejeitado". Cada uma tem sua própria tela.
+ */
+const ETAPAS_DECISAO_CUSTOMIZADA: Record<string, string> = {
+  "Renovação ou Encerramento": "renovacao",
+  "Validação Jurídica": "juridico",
+};
+
 interface EtapaCarregada {
   id: string;
   status: string;
@@ -120,6 +130,7 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
   const base = process.env.APP_BASE_URL || "https://veschia-aip.vercel.app";
   const rotaTrabalho = ETAPAS_DE_TRABALHO[etapa.nome_etapa];
   const eTrabalho = !!rotaTrabalho;
+  const rotaCustomizada = ETAPAS_DECISAO_CUSTOMIZADA[etapa.nome_etapa];
 
   let link: string;
 
@@ -137,7 +148,11 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
   });
   if (eToken) return null;
 
-  link = eTrabalho ? `${base}/${rotaTrabalho}-externa/${token}` : `${base}/aprovacao/${token}`;
+  link = eTrabalho
+    ? `${base}/${rotaTrabalho}-externa/${token}`
+    : rotaCustomizada
+      ? `${base}/${rotaCustomizada}/${token}`
+      : `${base}/aprovacao/${token}`;
 
   const valorFmt =
     solicitacao?.valor != null
@@ -167,7 +182,11 @@ async function avisarResponsavel(admin: any, etapa: EtapaCarregada, solicitacaoI
       <p style="margin: 0; font-size: 12px; color: #6b7a90;">
         ${eTrabalho
           ? "O link abre a tela onde você cadastra as empresas e escolhe uma. Válido por 30 dias, e pode ser aberto quantas vezes precisar."
-          : "O link abre uma tela com os detalhes, onde você aprova ou rejeita. Válido por 7 dias e por um único uso."}
+          : rotaCustomizada === "renovacao"
+            ? "O link abre uma tela com os detalhes, onde você escolhe entre renovar ou encerrar o contrato. Válido por 7 dias e por um único uso."
+            : rotaCustomizada === "juridico"
+              ? "O link abre uma tela com a minuta, onde você aprova ou pede um ajuste. Válido por 7 dias e por um único uso."
+              : "O link abre uma tela com os detalhes, onde você aprova ou rejeita. Válido por 7 dias e por um único uso."}
       </p>
     </div>
   `;
@@ -294,16 +313,31 @@ export async function avancarFluxo(admin: any, solicitacaoId: string): Promise<R
     // Etapa automática: executa a ação correspondente
     try {
       if (proxima.nome_etapa === "Elaboração do Contrato") {
-        const { data: jaTem } = await admin
-          .from("documentos")
-          .select("id")
-          .eq("solicitacao_id", solicitacaoId)
-          .eq("tipo", "minuta_contrato")
-          .limit(1)
-          .maybeSingle();
-        if (!jaTem) {
+        const { data: solicitacaoAtual } = await admin
+          .from("solicitacoes")
+          .select("ressalva_juridica")
+          .eq("id", solicitacaoId)
+          .single();
+
+        if (solicitacaoAtual?.ressalva_juridica) {
+          // O Jurídico pediu ajuste: gera minuta nova incorporando a ressalva
+          // (cláusula, valor, prazo, objeto — qualquer que seja), mesmo já
+          // existindo uma minuta anterior. Depois limpa a ressalva consumida.
           const { gerarMinuta } = await import("./minuta.server");
-          await gerarMinuta(admin, solicitacaoId);
+          await gerarMinuta(admin, solicitacaoId, solicitacaoAtual.ressalva_juridica);
+          await admin.from("solicitacoes").update({ ressalva_juridica: null }).eq("id", solicitacaoId);
+        } else {
+          const { data: jaTem } = await admin
+            .from("documentos")
+            .select("id")
+            .eq("solicitacao_id", solicitacaoId)
+            .eq("tipo", "minuta_contrato")
+            .limit(1)
+            .maybeSingle();
+          if (!jaTem) {
+            const { gerarMinuta } = await import("./minuta.server");
+            await gerarMinuta(admin, solicitacaoId);
+          }
         }
       } else if (proxima.nome_etapa === "Cadastro do Contrato") {
         await executarCadastroContrato(admin, solicitacaoId);
