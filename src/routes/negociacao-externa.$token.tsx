@@ -4,6 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { AlertCircle } from "lucide-react";
 import { PainelNegociacao, type Negociacao, type NegociacaoApi } from "@/components/negociacao-painel";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/negociacao-externa/$token")({
   component: NegociacaoExternaPage,
@@ -39,12 +40,27 @@ async function resolverToken(admin: any, token: string) {
   return { erro: null, etapa };
 }
 
+type ContextoNegociacao =
+  | { ok: false; erro: "invalido" | "expirado" }
+  | {
+      ok: true;
+      concluida: boolean;
+      empresaNome: string;
+      solicitacao: {
+        numero: number;
+        titulo: string;
+        descricao: string | null;
+        area: string | null;
+        centroCusto: string | null;
+      };
+    };
+
 const carregarContexto = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => tokenSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<ContextoNegociacao> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const r = await resolverToken(supabaseAdmin, data.token);
-    if (r.erro) return { estado: r.erro };
+    if (r.erro) return { ok: false, erro: r.erro };
 
     const { data: solicitacao } = await supabaseAdmin
       .from("solicitacoes")
@@ -59,7 +75,7 @@ const carregarContexto = createServerFn({ method: "POST" })
       .maybeSingle();
 
     return {
-      estado: "valido" as const,
+      ok: true,
       concluida: r.etapa.status !== "pendente",
       empresaNome: empresa?.nome ?? "",
       solicitacao: {
@@ -99,9 +115,11 @@ const criarExterno = createServerFn({ method: "POST" })
     if (r.erro) throw new Error("Link inválido ou expirado.");
     if (r.etapa.status !== "pendente") throw new Error("Essa negociação já foi concluída.");
 
-    const { error } = await supabaseAdmin
-      .from("negociacoes")
-      .insert({ solicitacao_id: r.etapa.solicitacao_id, ...data.dados });
+    const linha: TablesInsert<"negociacoes"> = {
+      solicitacao_id: r.etapa.solicitacao_id,
+      ...data.dados,
+    } as TablesInsert<"negociacoes">;
+    const { error } = await supabaseAdmin.from("negociacoes").insert(linha);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -115,9 +133,10 @@ const atualizarExterno = createServerFn({ method: "POST" })
     if (r.etapa.status !== "pendente") throw new Error("Essa negociação já foi concluída.");
 
     // Só deixa mexer em linha que pertence à solicitação daquele token
+    const linha = data.dados as TablesUpdate<"negociacoes">;
     const { error } = await supabaseAdmin
       .from("negociacoes")
-      .update(data.dados)
+      .update(linha)
       .eq("id", data.negociacaoId)
       .eq("solicitacao_id", r.etapa.solicitacao_id)
       .eq("status", "participante");
@@ -223,10 +242,10 @@ function NegociacaoExternaPage() {
 
   if (isLoading) return <Moldura><p className="text-sm text-muted-foreground">Carregando…</p></Moldura>;
 
-  if (!ctx || ctx.estado === "invalido") {
-    return <Moldura><Aviso titulo="Link inválido" texto="Esse link de negociação não existe ou foi removido." /></Moldura>;
-  }
-  if (ctx.estado === "expirado") {
+  if (!ctx || !ctx.ok) {
+    if (!ctx || ctx.erro === "invalido") {
+      return <Moldura><Aviso titulo="Link inválido" texto="Esse link de negociação não existe ou foi removido." /></Moldura>;
+    }
     return <Moldura><Aviso titulo="Link expirado" texto="Esse link passou do prazo de validade. Peça um novo aviso pelo sistema." /></Moldura>;
   }
 

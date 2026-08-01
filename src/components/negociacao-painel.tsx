@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Plus, Building2, User, Trophy, Ban, Pencil, Lock } from "lucide-react";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type TipoPessoa = "juridica" | "fisica";
 export type StatusNegociacao = "participante" | "escolhida" | "descartada";
@@ -41,11 +42,16 @@ export interface Negociacao {
   justificativa_escolha: string | null;
 }
 
+/** Campos que o formulário de fornecedor preenche — o resto (id, solicitacao_id, status, timestamps) é gerido pelo banco/servidor. */
+type CamposGeridosPeloServidor = "id" | "solicitacao_id" | "status" | "data_cadastro" | "updated_at" | "justificativa_escolha";
+export type NegociacaoInsertDados = Omit<TablesInsert<"negociacoes">, CamposGeridosPeloServidor>;
+export type NegociacaoUpdateDados = Omit<TablesUpdate<"negociacoes">, CamposGeridosPeloServidor>;
+
 /** Operações que cada tela injeta: a interna fala direto com o banco, a externa passa pelo servidor. */
 export interface NegociacaoApi {
   listar: () => Promise<Negociacao[]>;
-  criar: (dados: Record<string, unknown>) => Promise<void>;
-  atualizar: (id: string, dados: Record<string, unknown>) => Promise<void>;
+  criar: (dados: NegociacaoInsertDados) => Promise<void>;
+  atualizar: (id: string, dados: NegociacaoUpdateDados) => Promise<void>;
   escolher: (id: string, justificativa: string) => Promise<void>;
 }
 
@@ -258,7 +264,7 @@ function FornecedorForm({
   submitting,
 }: {
   initial: Negociacao | null;
-  onSubmit: (dados: Record<string, unknown>) => void;
+  onSubmit: (dados: NegociacaoInsertDados) => void;
   onCancel: () => void;
   submitLabel: string;
   submitting: boolean;
@@ -422,7 +428,7 @@ function NegociacaoCard({
   const [justificativa, setJustificativa] = React.useState("");
 
   const editarMut = useMutation({
-    mutationFn: async (dados: Record<string, unknown>) => api.atualizar(negociacao.id, dados),
+    mutationFn: async (dados: NegociacaoInsertDados) => api.atualizar(negociacao.id, dados),
     onSuccess: () => {
       setEditando(false);
       onChange();
@@ -538,7 +544,7 @@ export function PainelNegociacao({
   const { data: negociacoes = [], isLoading, refetch } = useQuery({ queryKey, queryFn: api.listar });
 
   const criarMut = useMutation({
-    mutationFn: async (dados: Record<string, unknown>) => api.criar(dados),
+    mutationFn: async (dados: NegociacaoInsertDados) => api.criar(dados),
     onSuccess: () => {
       setCriando(false);
       refetch();
