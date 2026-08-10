@@ -20,7 +20,11 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      // sessionStorage em vez de localStorage: a sessão morre ao fechar a aba, então o
+      // usuário faz login de novo a cada sessão do navegador, mas sobrevive a um F5
+      // (persistSession continua true) — evita perder um cadastro pela metade. Desligar
+      // persistSession derrubaria o usuário a cada refresh, não só ao fechar a aba.
+      storage: typeof window !== 'undefined' ? sessionStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     }

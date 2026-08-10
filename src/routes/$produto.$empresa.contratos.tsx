@@ -3,11 +3,11 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useEmpresa, useProdutoAtual, produtoInfo } from "@/lib/empresa";
+import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ChevronLeft, Plus, FileStack } from "lucide-react";
+import { Plus, FileStack } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/contratos")({
   component: ContratosPage,
@@ -115,7 +115,6 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
 function ContratosPage() {
   const empresa = useEmpresa();
   const produto = useProdutoAtual();
-  const info = produtoInfo(produto)!;
   const { user, loading: authLoading } = useAuth();
   const { data: fases = [] } = useFases(empresa.id, produto);
   const { data: contratos = [], isLoading } = useContratos(empresa.id);
@@ -136,25 +135,9 @@ function ContratosPage() {
   }
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header style={{ background: "var(--primary)" }}>
-        <div className="max-w-4xl mx-auto px-5 py-3.5">
-          <Link
-            to="/$produto/$empresa"
-            params={{ produto, empresa: empresa.slug }}
-            className="text-[13px] flex items-center gap-1 text-primary-foreground/70 hover:text-primary-foreground w-fit"
-          >
-            <ChevronLeft className="size-3.5" /> Voltar
-          </Link>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] mt-2" style={{ color: "var(--accent)" }}>
-            {info.nome} · {empresa.nome}
-          </p>
-          <h1 className="text-[19px] font-semibold text-primary-foreground">Contratos</h1>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-5 py-6 space-y-3">
-        {fases.length === 0 ? (
+    <main className="max-w-4xl mx-auto px-5 py-6 space-y-3">
+      <h1 className="text-xl font-semibold">Contratos</h1>
+      {fases.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Essa empresa ainda não ativou o acompanhamento por fases. Vá em Configuração pra ativar.
           </p>
@@ -192,7 +175,6 @@ function ContratosPage() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }

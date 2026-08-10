@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Check, Clock, Sparkles, X, Cog, ArrowUpRight, Mail, SkipForward } from "lucide-react";
+import { Check, Clock, Sparkles, X, Cog, ArrowUpRight, Mail, SkipForward } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/solicitacoes/$id")({
   component: SolicitacaoDetailPage,
@@ -258,10 +258,9 @@ function EtapaIcon({ status }: { status: string }) {
 }
 
 function SolicitacaoDetailPage() {
-  const { produto, empresa: empresaSlug } = Route.useParams();
+  const { produto, empresa: empresaSlug, id } = Route.useParams();
   const empresa = useEmpresa();
   const prod = useProdutoAtual();
-  const { id } = Route.useParams();
   const { data: solicitacao, isLoading } = useSolicitacaoDetail(id);
   const { data: etapas = [], isLoading: loadingEtapas, decidir } = useEtapasExecucao(id, empresa.id, prod, solicitacao?.valor ?? null, !!solicitacao);
 
@@ -274,20 +273,7 @@ function SolicitacaoDetailPage() {
   }
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header style={{ background: "var(--primary)" }}>
-        <div className="max-w-3xl mx-auto px-5 py-3.5">
-          <Link
-            to="/$produto/$empresa"
-            params={{ produto, empresa: empresaSlug }}
-            className="text-[13px] flex items-center gap-1 text-primary-foreground/70 hover:text-primary-foreground w-fit"
-          >
-            <ChevronLeft className="size-3.5" /> Voltar
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-5 py-6">
+    <main className="max-w-3xl mx-auto px-5 py-6">
         <p className="text-[12px] text-muted-foreground">Solicitação #{solicitacao.numero}</p>
         <h1 className="text-xl font-semibold mt-1">{solicitacao.titulo}</h1>
         {solicitacao.area && <p className="text-sm text-muted-foreground mt-0.5">{solicitacao.area}{solicitacao.centro_custo ? ` · ${solicitacao.centro_custo}` : ""}</p>}
@@ -411,7 +397,6 @@ function SolicitacaoDetailPage() {
             })
           )}
         </div>
-      </main>
-    </div>
+    </main>
   );
 }

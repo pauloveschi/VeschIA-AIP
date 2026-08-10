@@ -1,16 +1,15 @@
 import * as React from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
-import { useEmpresa, useProdutoAtual, useProdutoContratado, useIsEmpresaStaff, produtoInfo } from "@/lib/empresa";
+import { useEmpresa, useProdutoAtual, useProdutoContratado, produtoInfo } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { LogOut, Settings2, Plus, FileText, FileStack } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/")({
   component: DashboardPage,
@@ -143,10 +142,8 @@ function DashboardPage() {
   const empresa = useEmpresa();
   const produto = useProdutoAtual();
   const info = produtoInfo(produto)!;
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { data: contratado, isLoading: checkingEntitlement } = useProdutoContratado();
-  const { isStaff } = useIsEmpresaStaff();
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: solicitacoes = [], isLoading } = useSolicitacoes(empresa.id, produto);
 
@@ -191,44 +188,9 @@ function DashboardPage() {
   }
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header className="sticky top-0 z-10 backdrop-blur border-b border-border" style={{ background: "var(--primary)" }}>
-        <div className="max-w-6xl mx-auto px-5 py-3.5 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
-              {info.nome} · {empresa.nome}
-            </p>
-            <h1 className="text-[19px] font-semibold leading-tight text-primary-foreground">Solicitações</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/$produto/$empresa/contratos"
-              params={{ produto, empresa: empresa.slug }}
-              className="text-[13px] flex items-center gap-1.5 text-primary-foreground/70 hover:text-primary-foreground"
-            >
-              <FileStack className="size-3.5" /> Contratos
-            </Link>
-            {isStaff && (
-              <Link
-                to="/$produto/$empresa/configuracao"
-                params={{ produto, empresa: empresa.slug }}
-                className="text-[13px] flex items-center gap-1.5 text-primary-foreground/70 hover:text-primary-foreground"
-              >
-                <Settings2 className="size-3.5" /> Configuração
-              </Link>
-            )}
-            <button
-              onClick={async () => { await signOut(); navigate({ to: "/" }); }}
-              className="text-[13px] flex items-center gap-1.5 text-primary-foreground/70 hover:text-primary-foreground"
-            >
-              <LogOut className="size-3.5" /> Sair
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-5 py-6 space-y-3">
-        <NewSolicitacaoForm empresaId={empresa.id} produto={produto} onCreated={() => qc.invalidateQueries({ queryKey: ["solicitacoes", empresa.id, produto] })} />
+    <main className="max-w-6xl mx-auto px-5 py-6 space-y-3">
+      <h1 className="text-xl font-semibold">Solicitações</h1>
+      <NewSolicitacaoForm empresaId={empresa.id} produto={produto} onCreated={() => qc.invalidateQueries({ queryKey: ["solicitacoes", empresa.id, produto] })} />
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -261,7 +223,6 @@ function DashboardPage() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }

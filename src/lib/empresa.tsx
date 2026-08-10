@@ -71,6 +71,16 @@ export function useEmpresa(): Empresa {
   return ctx;
 }
 
+/**
+ * Versão que não lança quando a empresa não foi carregada. Existe pra tela de login:
+ * a leitura de `empresas_clientes` passa por RLS e só devolve linha pra quem já é membro
+ * autenticado, então um visitante deslogado legitimamente não tem empresa no contexto —
+ * e a tela de login não pode depender de um dado que exige estar logado pra existir.
+ */
+export function useEmpresaOpcional(): Empresa | null {
+  return React.useContext(EmpresaCtx);
+}
+
 export function useProdutoAtual(): ProdutoSlug {
   const ctx = React.useContext(ProdutoCtx);
   if (!ctx) throw new Error("useProdutoAtual precisa ser usado dentro de uma rota /$produto/$empresa");

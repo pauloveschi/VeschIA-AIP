@@ -1,13 +1,13 @@
 import * as React from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEmpresa, useProdutoAtual, useIsEmpresaAdmin, produtoInfo } from "@/lib/empresa";
+import { useEmpresa, useProdutoAtual, useIsEmpresaAdmin } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus, Sparkles, User, Cog, Trash2, ChevronUp, ChevronDown, Mail } from "lucide-react";
+import { Plus, Sparkles, User, Cog, Trash2, ChevronUp, ChevronDown, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/configuracao")({
   component: ConfiguracaoPage,
@@ -457,7 +457,6 @@ function EtapaRow({
 function ConfiguracaoPage() {
   const empresa = useEmpresa();
   const produto = useProdutoAtual();
-  const info = produtoInfo(produto)!;
   const { isAdmin, isLoading: checkingAdmin } = useIsEmpresaAdmin();
   const { data: papeis = [] } = usePapeis(empresa.id);
   const { data: etapas = [], isLoading } = useEtapasConfig(empresa.id, produto);
@@ -487,25 +486,9 @@ function ConfiguracaoPage() {
   }
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header style={{ background: "var(--primary)" }}>
-        <div className="max-w-3xl mx-auto px-5 py-3.5">
-          <Link
-            to="/$produto/$empresa"
-            params={{ produto, empresa: empresa.slug }}
-            className="text-[13px] flex items-center gap-1 text-primary-foreground/70 hover:text-primary-foreground w-fit"
-          >
-            <ChevronLeft className="size-3.5" /> Voltar
-          </Link>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] mt-2" style={{ color: "var(--accent)" }}>
-            {info.nome} · {empresa.nome}
-          </p>
-          <h1 className="text-[19px] font-semibold text-primary-foreground">Configuração do fluxo</h1>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-5 py-6 space-y-6">
-        <section>
+    <main className="max-w-3xl mx-auto px-5 py-6 space-y-6">
+      <h1 className="text-xl font-semibold">Configuração do fluxo</h1>
+      <section>
           <h2 className="text-sm font-semibold mb-2">Papéis internos</h2>
           <div className="flex flex-wrap gap-2 mb-3">
             {papeis.map((p) => (
@@ -537,8 +520,7 @@ function ConfiguracaoPage() {
           <NovaEtapaForm empresaId={empresa.id} produto={produto} papeis={papeis} proximaOrdem={(etapas.at(-1)?.ordem ?? 0) + 1} />
         </section>
 
-        <FasesSection empresaId={empresa.id} produto={produto} />
-      </main>
-    </div>
+      <FasesSection empresaId={empresa.id} produto={produto} />
+    </main>
   );
 }

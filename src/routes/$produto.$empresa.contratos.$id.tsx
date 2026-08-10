@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Check, FileText } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/contratos/$id")({
   component: ContratoDetailPage,
@@ -101,20 +101,7 @@ function ContratoDetailPage() {
   const faseAtualOrdem = fases.find((f) => f.id === contrato.fase_atual_id)?.ordem ?? 0;
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header style={{ background: "var(--primary)" }}>
-        <div className="max-w-3xl mx-auto px-5 py-3.5">
-          <Link
-            to="/$produto/$empresa/contratos"
-            params={{ produto, empresa: empresaSlug }}
-            className="text-[13px] flex items-center gap-1 text-primary-foreground/70 hover:text-primary-foreground w-fit"
-          >
-            <ChevronLeft className="size-3.5" /> Contratos
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-5 py-6">
+    <main className="max-w-3xl mx-auto px-5 py-6">
         <p className="text-[12px] text-muted-foreground">Contrato #{contrato.numero}</p>
         <h1 className="text-xl font-semibold mt-1">{contrato.titulo}</h1>
         {contrato.fornecedor_nome && <p className="text-sm text-muted-foreground mt-0.5">{contrato.fornecedor_nome}</p>}
@@ -181,7 +168,6 @@ function ContratoDetailPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </main>
   );
 }

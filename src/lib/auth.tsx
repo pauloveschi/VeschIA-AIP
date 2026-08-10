@@ -13,11 +13,42 @@ interface AuthCtx {
 
 const Ctx = React.createContext<AuthCtx | null>(null);
 
+let avisoStorageDeSessaoEmitido = false;
+
+/**
+ * Trava barata contra regressão silenciosa: `client.ts` é gerado (Supabase/Lovable), e a
+ * troca de `localStorage` por `sessionStorage` (ver CLAUDE.md, "Conventions to keep") some
+ * numa regeneração sem erro de tipo nem de lint — o sintoma (sessão sobrevive ao fechar a
+ * aba) só apareceria bem depois, sem ligação óbvia com a causa.
+ *
+ * `auth.storage` é uma propriedade real do GoTrueClient em runtime; o `.d.ts` público só a
+ * marca como `protected` pro TypeScript, então o cast abaixo é legítimo, não um jeito de
+ * calar um erro real. Comparamos identidade com `window.sessionStorage` diretamente — é
+ * mais confiável do que checar se existe alguma chave de sessão em `localStorage`, que só
+ * mudaria depois de alguém logar (e não pega o caso de ninguém ter aberto o sistema ainda).
+ */
+function verificarStorageDeSessao() {
+  if (avisoStorageDeSessaoEmitido || typeof window === "undefined") return;
+  avisoStorageDeSessaoEmitido = true;
+
+  const storageEmUso = (supabase.auth as unknown as { storage?: Storage }).storage;
+  if (storageEmUso !== window.sessionStorage) {
+    console.warn(
+      `[Supabase] auth.storage não é sessionStorage — a configuração em ` +
+        `src/integrations/supabase/client.ts provavelmente foi perdida numa regeneração ` +
+        `(Supabase codegen ou resync da Lovable Cloud). Reaplique a linha do "storage: sessionStorage" ` +
+        `e veja CLAUDE.md > Conventions to keep, not "fix".`,
+    );
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
+    verificarStorageDeSessao();
+
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       setSession(s);
     });

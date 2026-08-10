@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
-import { useEmpresa } from "@/lib/empresa";
+import { useEmpresaOpcional } from "@/lib/empresa";
 import { cn } from "@/lib/utils";
 
 interface Search {
@@ -21,8 +21,10 @@ export const Route = createFileRoute("/$produto/$empresa/auth")({
 });
 
 function AuthPage() {
-  const empresa = useEmpresa();
-  const { produto } = Route.useParams();
+  // Deslogado, o RLS não devolve a empresa — daí o acessor opcional. O slug vem da URL,
+  // que é o que o redirect pós-login precisa; o nome é só enfeite e some se não veio.
+  const empresa = useEmpresaOpcional();
+  const { produto, empresa: empresaSlug } = Route.useParams();
   const search = useSearch({ from: "/$produto/$empresa/auth" });
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
@@ -35,9 +37,9 @@ function AuthPage() {
 
   React.useEffect(() => {
     if (user) {
-      navigate({ to: search.redirect ?? "/$produto/$empresa", params: { produto, empresa: empresa.slug } });
+      navigate({ to: search.redirect ?? "/$produto/$empresa", params: { produto, empresa: empresaSlug } });
     }
-  }, [user, navigate, search.redirect, produto, empresa.slug]);
+  }, [user, navigate, search.redirect, produto, empresaSlug]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +61,9 @@ function AuthPage() {
   return (
     <div className="min-h-svh bg-background text-foreground max-w-md mx-auto">
       <section className="px-5 pt-8">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{empresa.nome}</p>
+        {empresa && (
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{empresa.nome}</p>
+        )}
         <h1 className="text-2xl font-semibold mt-1">{mode === "signin" ? "Entrar" : "Criar conta"}</h1>
 
         <div className="mt-5 inline-flex p-1 rounded-full bg-secondary">

@@ -31,3 +31,6 @@ bun-debug.log*
 .DS_Store
 Thumbs.db
 *.swp
+
+# Config local de dev server do Claude Code (aponta pra binário/porta desta máquina)
+.claude/launch.json

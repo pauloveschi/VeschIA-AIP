@@ -1,5 +1,17 @@
-import { createFileRoute, Outlet, Link, notFound } from "@tanstack/react-router";
-import { useEmpresaBySlug, EmpresaProvider, isProdutoValido, produtoInfo } from "@/lib/empresa";
+import * as React from "react";
+import { createFileRoute, Outlet, Link, useLocation, useMatchRoute, useNavigate, notFound } from "@tanstack/react-router";
+import {
+  useEmpresaBySlug,
+  EmpresaProvider,
+  isProdutoValido,
+  produtoInfo,
+  useIsEmpresaAdmin,
+  type Empresa,
+  type ProdutoSlug,
+} from "@/lib/empresa";
+import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+import { FileText, FileStack, Settings2, Mail, LogOut, Menu, X } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa")({
   loader: ({ params }) => {
@@ -9,9 +21,33 @@ export const Route = createFileRoute("/$produto/$empresa")({
 });
 
 function EmpresaLayout() {
+  // Todos os hooks ficam aqui em cima, sem condição nenhuma antes deles.
   const { produto, empresa: empresaSlug } = Route.useParams();
   const { data: empresa, isLoading, isError } = useEmpresaBySlug(empresaSlug);
   const produto_ = produto as import("@/lib/empresa").ProdutoSlug;
+  const matchRoute = useMatchRoute();
+
+  // A tela de login (/$produto/$empresa/auth) sai antes de tudo, por dois motivos.
+  // 1. Não pode aparecer com o menu atrás: ver Solicitações/Contratos/Sair sem ter entrado
+  //    não é falha de segurança (nenhum item dá acesso sem sessão), mas passa a impressão
+  //    errada de que dá.
+  // 2. Não pode depender das validações de empresa abaixo: a leitura de `empresas_clientes`
+  //    passa por RLS e só devolve linha pra quem já é membro autenticado, então o visitante
+  //    deslogado cairia em "Empresa não encontrada" — a tela de login ficaria protegida por
+  //    uma validação que exige login. Por isso ela renderiza mesmo com a empresa ausente.
+  // A detecção usa o matcher do próprio router (contra o `to` tipado da rota), não uma
+  // comparação de string de pathname na mão, e fica isolada neste único ponto.
+  if (matchRoute({ to: "/$produto/$empresa/auth" })) {
+    // Com empresa carregada (já logado, trocando de conta) o provider ainda é fornecido, pra
+    // tela poder mostrar o nome; sem ela, renderiza puro — `useEmpresaOpcional` cobre os dois.
+    return empresa ? (
+      <EmpresaProvider empresa={empresa} produto={produto_}>
+        <Outlet />
+      </EmpresaProvider>
+    ) : (
+      <Outlet />
+    );
+  }
 
   if (isLoading) {
     return <div className="min-h-svh grid place-items-center text-muted-foreground">Carregando…</div>;
@@ -46,7 +82,132 @@ function EmpresaLayout() {
 
   return (
     <EmpresaProvider empresa={empresa} produto={produto_}>
-      <Outlet />
+      <AppShell produto={produto_} empresa={empresa}>
+        <Outlet />
+      </AppShell>
     </EmpresaProvider>
+  );
+}
+
+const navItemClass = cn(
+  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-primary-foreground/70 transition-colors",
+  "hover:bg-white/5 hover:text-primary-foreground",
+  "[&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-primary-foreground",
+);
+
+/** Conteúdo do menu lateral, compartilhado entre a versão fixa (desktop) e a gaveta (mobile). */
+function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug; empresa: Empresa; onNavigate: () => void }) {
+  const info = produtoInfo(produto)!;
+  const { isAdmin } = useIsEmpresaAdmin();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex h-full flex-col text-primary-foreground" style={{ background: "var(--primary)" }}>
+      <div className="px-4 py-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
+          {info.nome}
+        </p>
+        <p className="text-[15px] font-semibold mt-0.5 truncate">{empresa.nome}</p>
+      </div>
+
+      <nav className="flex-1 px-2 space-y-0.5">
+        <Link
+          to="/$produto/$empresa"
+          params={{ produto, empresa: empresa.slug }}
+          activeOptions={{ exact: true }}
+          className={navItemClass}
+          onClick={onNavigate}
+        >
+          <FileText className="size-4 shrink-0" /> Solicitações
+        </Link>
+        <Link
+          to="/$produto/$empresa/contratos"
+          params={{ produto, empresa: empresa.slug }}
+          className={navItemClass}
+          onClick={onNavigate}
+        >
+          <FileStack className="size-4 shrink-0" /> Contratos
+        </Link>
+        {isAdmin && (
+          <Link
+            to="/$produto/$empresa/configuracao"
+            params={{ produto, empresa: empresa.slug }}
+            className={navItemClass}
+            onClick={onNavigate}
+          >
+            <Settings2 className="size-4 shrink-0" /> Configuração
+          </Link>
+        )}
+      </nav>
+
+      <div className="px-2 py-3 border-t border-white/10 space-y-0.5">
+        <a
+          href="mailto:veschipaulo@gmail.com"
+          className="flex flex-col gap-0.5 rounded-lg px-3 py-2 text-[13.5px] text-primary-foreground/70 transition-colors hover:bg-white/5 hover:text-primary-foreground"
+        >
+          <span className="flex items-center gap-2.5">
+            <Mail className="size-4 shrink-0" /> Suporte
+          </span>
+          <span className="pl-[26px] text-[11px] text-primary-foreground/50">veschipaulo@gmail.com</span>
+        </a>
+        <button
+          onClick={async () => {
+            await signOut();
+            navigate({ to: "/" });
+          }}
+          className={cn(navItemClass, "w-full text-left")}
+        >
+          <LogOut className="size-4 shrink-0" /> Sair
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Casca do app: menu lateral fixo no desktop, gaveta no mobile. */
+function AppShell({ produto, empresa, children }: { produto: ProdutoSlug; empresa: Empresa; children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(false);
+  const location = useLocation();
+
+  // Fecha a gaveta sozinha sempre que a rota muda (inclusive voltar/avançar do navegador).
+  React.useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  return (
+    <div className="min-h-svh bg-background text-foreground">
+      <aside className="hidden md:block fixed inset-y-0 left-0 w-56 z-20">
+        <SidebarContent produto={produto} empresa={empresa} onNavigate={() => {}} />
+      </aside>
+
+      <div
+        className="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 text-primary-foreground"
+        style={{ background: "var(--primary)" }}
+      >
+        <button onClick={() => setOpen(true)} aria-label="Abrir menu" className="-ml-1 p-1">
+          <Menu className="size-5" />
+        </button>
+        <span className="text-[14px] font-semibold truncate">{empresa.nome}</span>
+      </div>
+
+      {open && (
+        <div className="md:hidden fixed inset-0 z-30">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-64 shadow-xl">
+            <SidebarContent produto={produto} empresa={empresa} onNavigate={() => setOpen(false)} />
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Fechar menu"
+              className="absolute right-2 top-2 p-1 text-primary-foreground/70 hover:text-primary-foreground"
+            >
+              <X className="size-5" />
+            </button>
+          </aside>
+        </div>
+      )}
+
+      <div className="md:pl-56">{children}</div>
+    </div>
   );
 }
