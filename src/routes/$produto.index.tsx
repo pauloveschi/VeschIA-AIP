@@ -9,9 +9,12 @@ export const Route = createFileRoute("/$produto/")({
 });
 
 const FEATURES = [
-  { icon: GitBranch, title: "Fluxo configurável", desc: "Cada empresa define suas próprias etapas de aprovação." },
-  { icon: Sparkles, title: "IA documental", desc: "Lê os documentos do processo e participa da decisão." },
-  { icon: Bell, title: "Prazo e indicador", desc: "SLA e KPI monitorados automaticamente, por processo ou por cliente." },
+  // Os três textos descrevem só o que o sistema já faz hoje. Vale manter assim:
+  // é a única página pública, e promessa que não se sustenta na demonstração custa
+  // mais caro que um texto modesto. KPI de medição e pagamento entra aqui quando existir.
+  { icon: GitBranch, title: "Fluxo configurável", desc: "Cada empresa ativa, ordena e atribui as etapas do seu fluxo de aprovação." },
+  { icon: Sparkles, title: "IA que redige", desc: "Escreve a minuta do contrato e reescreve a partir das ressalvas do Jurídico." },
+  { icon: Bell, title: "Prazo vigiado", desc: "Acompanha o vencimento de cada contrato e aciona a renovação antes do prazo." },
 ];
 
 const WHATSAPP_VENDAS = "5531981023577";
