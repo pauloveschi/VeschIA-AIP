@@ -1,17 +1,29 @@
 import * as React from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { useEmpresa, useProdutoAtual, useProdutoContratado, produtoInfo } from "@/lib/empresa";
+import { statusSolicitacaoMeta, STATUS_SOLICITACAO } from "@/lib/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Search, X } from "lucide-react";
+
+/**
+ * O filtro por status e o texto de busca vivem na URL, não em estado local, por dois
+ * motivos: o link fica compartilhável ("me manda as rejeitadas") e sobrevive ao F5.
+ * Os dois são opcionais; ausentes significam "todas, sem busca".
+ */
+const searchSchema = z.object({
+  status: z.enum(STATUS_SOLICITACAO).optional(),
+  busca: z.string().optional(),
+});
 
 export const Route = createFileRoute("/$produto/$empresa/")({
+  validateSearch: (search) => searchSchema.parse(search),
   component: DashboardPage,
 });
 
@@ -27,26 +39,14 @@ interface Solicitacao {
   created_at: string | null;
 }
 
-const statusMeta: Record<string, { label: string; fg: string; bg: string }> = {
-  aberta: { label: "Aberta", fg: "var(--ops-aberta)", bg: "var(--ops-aberta-bg)" },
-  em_analise: { label: "Em análise", fg: "var(--ops-em-analise)", bg: "var(--ops-em-analise-bg)" },
-  ajuste_solicitado: { label: "Ajuste solicitado", fg: "var(--ops-em-analise)", bg: "var(--ops-em-analise-bg)" },
-  aprovada: { label: "Aprovada", fg: "var(--ops-aprovada)", bg: "var(--ops-aprovada-bg)" },
-  rejeitada: { label: "Rejeitada", fg: "var(--ops-rejeitada)", bg: "var(--ops-rejeitada-bg)" },
-  assinada: { label: "Assinada", fg: "var(--ops-assinada)", bg: "var(--ops-assinada-bg)" },
-  encerrada: { label: "Encerrada", fg: "var(--ops-encerrada)", bg: "var(--ops-encerrada-bg)" },
-  cancelada: { label: "Cancelada", fg: "var(--ops-cancelada)", bg: "var(--ops-cancelada-bg)" },
-};
-
 function StatusBadge({ status }: { status: string }) {
-  const m = statusMeta[status] ?? statusMeta.aberta;
+  const m = statusSolicitacaoMeta[status] ?? statusSolicitacaoMeta.aberta;
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold" style={{ color: m.fg, background: m.bg }}>
       {m.label}
     </span>
   );
 }
-
 
 const motorSchema = z.object({ solicitacaoId: z.string() });
 
@@ -73,6 +73,47 @@ function useSolicitacoes(empresaId: string, produto: string) {
       return (data ?? []).map((s) => ({ ...s, valor: s.valor != null ? Number(s.valor) : null }));
     },
   });
+}
+
+/**
+ * Caixa de busca. O que a pessoa digita entra na URL, mas só depois de uma pausa:
+ * gravar a cada tecla encheria o histórico do navegador de entradas inúteis e o botão
+ * voltar viraria "apagar uma letra".
+ */
+function CaixaDeBusca({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
+  const [texto, setTexto] = React.useState(valor);
+
+  // Quando o filtro muda por fora (clique no menu limpa a busca), o campo acompanha.
+  React.useEffect(() => {
+    setTexto(valor);
+  }, [valor]);
+
+  React.useEffect(() => {
+    if (texto === valor) return;
+    const id = setTimeout(() => onChange(texto), 300);
+    return () => clearTimeout(id);
+  }, [texto]);
+
+  return (
+    <div className="relative max-w-sm">
+      <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <Input
+        placeholder="Buscar por título, fornecedor ou número"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        className="h-9 pl-9 pr-8"
+      />
+      {texto && (
+        <button
+          onClick={() => setTexto("")}
+          aria-label="Limpar busca"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
 }
 
 function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: string; produto: string; onCreated: () => void }) {
@@ -146,6 +187,28 @@ function DashboardPage() {
   const { data: contratado, isLoading: checkingEntitlement } = useProdutoContratado();
   const qc = useQueryClient();
   const { data: solicitacoes = [], isLoading } = useSolicitacoes(empresa.id, produto);
+  const { status, busca } = Route.useSearch();
+  const navigate = useNavigate();
+
+  const trocarBusca = (texto: string) => {
+    navigate({
+      to: "/$produto/$empresa",
+      params: { produto, empresa: empresa.slug },
+      search: { status, busca: texto || undefined },
+      replace: true, // troca de busca não merece entrada nova no histórico
+    });
+  };
+
+  const termo = (busca ?? "").trim().toLowerCase();
+  const visiveis = solicitacoes.filter((s) => {
+    if (status && s.status !== status) return false;
+    if (!termo) return true;
+    return (
+      s.titulo.toLowerCase().includes(termo) ||
+      (s.fornecedor_nome ?? "").toLowerCase().includes(termo) ||
+      String(s.numero).includes(termo)
+    );
+  });
 
   if (authLoading) {
     return <div className="min-h-svh grid place-items-center text-muted-foreground">Carregando…</div>;
@@ -189,16 +252,26 @@ function DashboardPage() {
 
   return (
     <main className="max-w-6xl mx-auto px-5 py-6 space-y-3">
-      <h1 className="text-xl font-semibold">Solicitações</h1>
+      <div className="flex items-center gap-2 flex-wrap">
+        <h1 className="text-xl font-semibold">Solicitações</h1>
+        {status && (
+          <span className="text-[13px] text-muted-foreground">· {statusSolicitacaoMeta[status].label}</span>
+        )}
+      </div>
+
       <NewSolicitacaoForm empresaId={empresa.id} produto={produto} onCreated={() => qc.invalidateQueries({ queryKey: ["solicitacoes", empresa.id, produto] })} />
+
+      <CaixaDeBusca valor={busca ?? ""} onChange={trocarBusca} />
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : solicitacoes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma solicitação ainda.</p>
+        ) : visiveis.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {solicitacoes.length === 0 ? "Nenhuma solicitação ainda." : "Nenhuma solicitação com esse filtro."}
+          </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {solicitacoes.map((s) => (
+            {visiveis.map((s) => (
               <Link
                 key={s.id}
                 to="/$produto/$empresa/solicitacoes/$id"

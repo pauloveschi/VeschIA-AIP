@@ -1,5 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Outlet, Link, useLocation, useMatchRoute, useNavigate, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useEmpresaBySlug,
   EmpresaProvider,
@@ -11,7 +13,14 @@ import {
 } from "@/lib/empresa";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { FileText, FileStack, Settings2, Mail, LogOut, Menu, X } from "lucide-react";
+import {
+  STATUS_SOLICITACAO,
+  STATUS_CONTRATO,
+  statusSolicitacaoMeta,
+  statusContratoMeta,
+  contarPorStatus,
+} from "@/lib/status";
+import { FileText, FileStack, Settings2, Mail, LogOut, Menu, X, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa")({
   loader: ({ params }) => {
@@ -95,12 +104,89 @@ const navItemClass = cn(
   "[&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-primary-foreground",
 );
 
+/** Item de submenu: rótulo à esquerda, contador à direita. */
+const subItemClass = cn(
+  "flex items-center justify-between gap-2 rounded-lg pl-9 pr-3 py-1.5 text-[12.5px] text-primary-foreground/60 transition-colors",
+  "hover:bg-white/5 hover:text-primary-foreground",
+  "[&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-primary-foreground",
+);
+
+/**
+ * Contadores por status. Traz só a coluna `status` e conta no cliente, em vez de uma
+ * consulta por status: é uma ida ao banco em lugar de nove, e a coluna é minúscula.
+ * Quando a paginação entrar (o passo seguinte, pra volume grande), isso vira contagem
+ * agregada no banco.
+ */
+function useContadores(empresaId: string, produto: string) {
+  const solicitacoes = useQuery({
+    queryKey: ["contagem-solicitacoes", empresaId, produto],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("solicitacoes")
+        .select("status")
+        .eq("empresa_id", empresaId)
+        .eq("produto", produto);
+      if (error) throw error;
+      return contarPorStatus(data ?? [], STATUS_SOLICITACAO);
+    },
+  });
+
+  const contratos = useQuery({
+    queryKey: ["contagem-contratos", empresaId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("contratos").select("status").eq("empresa_id", empresaId);
+      if (error) throw error;
+      return contarPorStatus(data ?? [], STATUS_CONTRATO);
+    },
+  });
+
+  const total = (c: Record<string, number> | undefined) =>
+    c ? Object.values(c).reduce((soma, n) => soma + n, 0) : 0;
+
+  return {
+    solicitacoes: solicitacoes.data,
+    contratos: contratos.data,
+    totalSolicitacoes: total(solicitacoes.data),
+    totalContratos: total(contratos.data),
+  };
+}
+
+/** Cabeçalho de um grupo do menu: abre e fecha o submenu, sem navegar. */
+function GrupoHeader({
+  icone,
+  rotulo,
+  aberto,
+  onToggle,
+}: {
+  icone: React.ReactNode;
+  rotulo: string;
+  aberto: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button onClick={onToggle} aria-expanded={aberto} className={cn(navItemClass, "w-full text-left justify-between")}>
+      <span className="flex items-center gap-2.5">
+        {icone} {rotulo}
+      </span>
+      <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", aberto && "rotate-180")} />
+    </button>
+  );
+}
+
 /** Conteúdo do menu lateral, compartilhado entre a versão fixa (desktop) e a gaveta (mobile). */
 function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug; empresa: Empresa; onNavigate: () => void }) {
   const info = produtoInfo(produto)!;
   const { isAdmin } = useIsEmpresaAdmin();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const matchRoute = useMatchRoute();
+  const contadores = useContadores(empresa.id, produto);
+
+  // O grupo da tela em que você já está nasce aberto, pra não obrigar a expandir de novo
+  // a cada navegação. Depois disso, quem manda é o clique.
+  const emContratos = !!matchRoute({ to: "/$produto/$empresa/contratos", fuzzy: true });
+  const [abertoSolicitacoes, setAbertoSolicitacoes] = React.useState(!emContratos);
+  const [abertoContratos, setAbertoContratos] = React.useState(emContratos);
 
   return (
     <div className="flex h-full flex-col text-primary-foreground" style={{ background: "var(--primary)" }}>
@@ -111,24 +197,79 @@ function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug
         <p className="text-[15px] font-semibold mt-0.5 truncate">{empresa.nome}</p>
       </div>
 
-      <nav className="flex-1 px-2 space-y-0.5">
-        <Link
-          to="/$produto/$empresa"
-          params={{ produto, empresa: empresa.slug }}
-          activeOptions={{ exact: true }}
-          className={navItemClass}
-          onClick={onNavigate}
-        >
-          <FileText className="size-4 shrink-0" /> Solicitações
-        </Link>
-        <Link
-          to="/$produto/$empresa/contratos"
-          params={{ produto, empresa: empresa.slug }}
-          className={navItemClass}
-          onClick={onNavigate}
-        >
-          <FileStack className="size-4 shrink-0" /> Contratos
-        </Link>
+      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
+        <GrupoHeader
+          icone={<FileText className="size-4 shrink-0" />}
+          rotulo="Solicitações"
+          aberto={abertoSolicitacoes}
+          onToggle={() => setAbertoSolicitacoes((v) => !v)}
+        />
+        {abertoSolicitacoes && (
+          <div className="space-y-0.5 pb-1">
+            <Link
+              to="/$produto/$empresa"
+              params={{ produto, empresa: empresa.slug }}
+              search={{ status: undefined, busca: undefined }}
+              activeOptions={{ exact: true, includeSearch: true }}
+              className={subItemClass}
+              onClick={onNavigate}
+            >
+              <span>Todas</span>
+              <span className="tabular-nums text-primary-foreground/50">{contadores.totalSolicitacoes}</span>
+            </Link>
+            {STATUS_SOLICITACAO.map((s) => (
+              <Link
+                key={s}
+                to="/$produto/$empresa"
+                params={{ produto, empresa: empresa.slug }}
+                search={{ status: s, busca: undefined }}
+                activeOptions={{ exact: true, includeSearch: true }}
+                className={subItemClass}
+                onClick={onNavigate}
+              >
+                <span>{statusSolicitacaoMeta[s].label}</span>
+                <span className="tabular-nums text-primary-foreground/50">{contadores.solicitacoes?.[s] ?? 0}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <GrupoHeader
+          icone={<FileStack className="size-4 shrink-0" />}
+          rotulo="Contratos"
+          aberto={abertoContratos}
+          onToggle={() => setAbertoContratos((v) => !v)}
+        />
+        {abertoContratos && (
+          <div className="space-y-0.5 pb-1">
+            <Link
+              to="/$produto/$empresa/contratos"
+              params={{ produto, empresa: empresa.slug }}
+              search={{ status: undefined, busca: undefined }}
+              activeOptions={{ exact: true, includeSearch: true }}
+              className={subItemClass}
+              onClick={onNavigate}
+            >
+              <span>Todos</span>
+              <span className="tabular-nums text-primary-foreground/50">{contadores.totalContratos}</span>
+            </Link>
+            {STATUS_CONTRATO.map((s) => (
+              <Link
+                key={s}
+                to="/$produto/$empresa/contratos"
+                params={{ produto, empresa: empresa.slug }}
+                search={{ status: s, busca: undefined }}
+                activeOptions={{ exact: true, includeSearch: true }}
+                className={subItemClass}
+                onClick={onNavigate}
+              >
+                <span>{statusContratoMeta[s].label}</span>
+                <span className="tabular-nums text-primary-foreground/50">{contadores.contratos?.[s] ?? 0}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+
         {isAdmin && (
           <Link
             to="/$produto/$empresa/configuracao"

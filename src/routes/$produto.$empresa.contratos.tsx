@@ -1,15 +1,24 @@
 import * as React from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
+import { statusContratoMeta, STATUS_CONTRATO } from "@/lib/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { Plus, FileStack } from "lucide-react";
+import { Plus, FileStack, Search, X } from "lucide-react";
+
+/** Mesmo padrão da lista de solicitações: filtro e busca vivem na URL. */
+const searchSchema = z.object({
+  status: z.enum(STATUS_CONTRATO).optional(),
+  busca: z.string().optional(),
+});
 
 export const Route = createFileRoute("/$produto/$empresa/contratos")({
+  validateSearch: (search) => searchSchema.parse(search),
   component: ContratosPage,
 });
 
@@ -59,6 +68,42 @@ function useContratos(empresaId: string) {
       return (data ?? []).map((c) => ({ ...c, valor: c.valor != null ? Number(c.valor) : null }));
     },
   });
+}
+
+/** Igual à da lista de solicitações: só grava na URL depois de uma pausa na digitação. */
+function CaixaDeBusca({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
+  const [texto, setTexto] = React.useState(valor);
+
+  React.useEffect(() => {
+    setTexto(valor);
+  }, [valor]);
+
+  React.useEffect(() => {
+    if (texto === valor) return;
+    const id = setTimeout(() => onChange(texto), 300);
+    return () => clearTimeout(id);
+  }, [texto]);
+
+  return (
+    <div className="relative max-w-sm">
+      <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <Input
+        placeholder="Buscar por título, fornecedor ou número"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        className="h-9 pl-9 pr-8"
+      />
+      {texto && (
+        <button
+          onClick={() => setTexto("")}
+          aria-label="Limpar busca"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
 }
 
 function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; fases: FaseConfig[]; onCreated: () => void }) {
@@ -119,8 +164,30 @@ function ContratosPage() {
   const { data: fases = [] } = useFases(empresa.id, produto);
   const { data: contratos = [], isLoading } = useContratos(empresa.id);
   const qc = useQueryClient();
+  const { status, busca } = Route.useSearch();
+  const navigate = useNavigate();
 
   const faseNome = (id: string | null) => fases.find((f) => f.id === id)?.nome_fase ?? "—";
+
+  const trocarBusca = (texto: string) => {
+    navigate({
+      to: "/$produto/$empresa/contratos",
+      params: { produto, empresa: empresa.slug },
+      search: { status, busca: texto || undefined },
+      replace: true,
+    });
+  };
+
+  const termo = (busca ?? "").trim().toLowerCase();
+  const visiveis = contratos.filter((c) => {
+    if (status && c.status !== status) return false;
+    if (!termo) return true;
+    return (
+      c.titulo.toLowerCase().includes(termo) ||
+      (c.fornecedor_nome ?? "").toLowerCase().includes(termo) ||
+      String(c.numero).includes(termo)
+    );
+  });
 
   if (authLoading) {
     return <div className="min-h-svh grid place-items-center text-muted-foreground">Carregando…</div>;
@@ -136,7 +203,11 @@ function ContratosPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-5 py-6 space-y-3">
-      <h1 className="text-xl font-semibold">Contratos</h1>
+      <div className="flex items-center gap-2 flex-wrap">
+        <h1 className="text-xl font-semibold">Contratos</h1>
+        {status && <span className="text-[13px] text-muted-foreground">· {statusContratoMeta[status].label}</span>}
+      </div>
+
       {fases.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Essa empresa ainda não ativou o acompanhamento por fases. Vá em Configuração pra ativar.
@@ -145,13 +216,17 @@ function ContratosPage() {
           <NovoContratoForm empresaId={empresa.id} fases={fases} onCreated={() => qc.invalidateQueries({ queryKey: ["contratos", empresa.id] })} />
         )}
 
+        <CaixaDeBusca valor={busca ?? ""} onChange={trocarBusca} />
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : contratos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum contrato ainda.</p>
+        ) : visiveis.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {contratos.length === 0 ? "Nenhum contrato ainda." : "Nenhum contrato com esse filtro."}
+          </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {contratos.map((c) => (
+            {visiveis.map((c) => (
               <Link
                 key={c.id}
                 to="/$produto/$empresa/contratos/$id"

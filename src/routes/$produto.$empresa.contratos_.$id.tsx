@@ -108,6 +108,7 @@ function ContratoDetailPage() {
         <Link
           to="/$produto/$empresa/contratos"
           params={{ produto, empresa: empresaSlug }}
+          search={{ status: undefined, busca: undefined }}
           className="text-[13px] flex items-center gap-1 text-muted-foreground hover:text-foreground w-fit mb-3"
         >
           <ChevronLeft className="size-3.5" /> Voltar pra contratos
