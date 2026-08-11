@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { cn } from "@/lib/utils";
-import { Check, FileText } from "lucide-react";
+import { Check, FileText, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/contratos/$id")({
   component: ContratoDetailPage,
@@ -102,6 +102,17 @@ function ContratoDetailPage() {
 
   return (
     <main className="max-w-3xl mx-auto px-5 py-6">
+        {/* O menu lateral leva pra lista de contratos, mas nele o item "Contratos" aparece
+            aceso nesta tela (ela é filha dele), então não se lê como caminho de volta.
+            Por isso o link explícito fica, mesmo com o menu cobrindo o mesmo destino. */}
+        <Link
+          to="/$produto/$empresa/contratos"
+          params={{ produto, empresa: empresaSlug }}
+          className="text-[13px] flex items-center gap-1 text-muted-foreground hover:text-foreground w-fit mb-3"
+        >
+          <ChevronLeft className="size-3.5" /> Voltar pra contratos
+        </Link>
+
         <p className="text-[12px] text-muted-foreground">Contrato #{contrato.numero}</p>
         <h1 className="text-xl font-semibold mt-1">{contrato.titulo}</h1>
         {contrato.fornecedor_nome && <p className="text-sm text-muted-foreground mt-0.5">{contrato.fornecedor_nome}</p>}

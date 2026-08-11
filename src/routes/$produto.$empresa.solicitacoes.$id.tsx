@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { useEmpresa, useProdutoAtual } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Sparkles, X, Cog, ArrowUpRight, Mail, SkipForward } from "lucide-react";
+import { Check, Clock, Sparkles, X, Cog, ArrowUpRight, Mail, SkipForward, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/$produto/$empresa/solicitacoes/$id")({
   component: SolicitacaoDetailPage,
@@ -274,6 +274,16 @@ function SolicitacaoDetailPage() {
 
   return (
     <main className="max-w-3xl mx-auto px-5 py-6">
+        {/* Mesmo padrão da tela de contrato: o menu lateral leva pra lista, mas o item
+            aparece aceso aqui dentro, então não se lê como caminho de volta. */}
+        <Link
+          to="/$produto/$empresa"
+          params={{ produto, empresa: empresaSlug }}
+          className="text-[13px] flex items-center gap-1 text-muted-foreground hover:text-foreground w-fit mb-3"
+        >
+          <ChevronLeft className="size-3.5" /> Voltar pra solicitações
+        </Link>
+
         <p className="text-[12px] text-muted-foreground">Solicitação #{solicitacao.numero}</p>
         <h1 className="text-xl font-semibold mt-1">{solicitacao.titulo}</h1>
         {solicitacao.area && <p className="text-sm text-muted-foreground mt-0.5">{solicitacao.area}{solicitacao.centro_custo ? ` · ${solicitacao.centro_custo}` : ""}</p>}
