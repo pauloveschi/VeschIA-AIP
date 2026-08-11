@@ -10,6 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        // Cor de botão por função. Ver os tokens --confirmar/--recusar em styles.css:
+        // o ciano da marca segue valendo em texto/ícone, mas não como fundo de botão.
+        confirmar: "bg-confirmar text-confirmar-foreground shadow hover:bg-confirmar/90",
+        recusar: "bg-recusar text-recusar-foreground shadow hover:bg-recusar/90",
+        // Versões de ênfase menor, pra quando as duas opções convivem lado a lado e
+        // só uma vem destacada pelo link do e-mail (ver /aprovacao/$token).
+        confirmarOutline:
+          "border border-confirmar/30 bg-background text-confirmar shadow-sm hover:bg-confirmar/10 hover:text-confirmar",
+        recusarOutline:
+          "border border-recusar/30 bg-background text-recusar shadow-sm hover:bg-recusar/10 hover:text-recusar",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",

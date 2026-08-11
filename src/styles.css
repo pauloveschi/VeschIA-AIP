@@ -42,6 +42,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-confirmar: var(--confirmar);
+  --color-confirmar-foreground: var(--confirmar-foreground);
+  --color-recusar: var(--recusar);
+  --color-recusar-foreground: var(--recusar-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -81,6 +85,18 @@
   --accent-foreground: oklch(0.99 0 0);
   --destructive: oklch(0.55 0.20 27);
   --destructive-foreground: oklch(0.98 0.005 240);
+
+  /*
+   * Cor de PREENCHIMENTO de botão, por função. Proposital que sejam tokens próprios e
+   * não `--accent`: o ciano da marca continua valendo em texto, título, rótulo e ícone,
+   * e só deixa de ser fundo de botão. Mexer em `--accent` mudaria também esses textos.
+   * --recusar reaproveita o vermelho que a tela de Renovação já usa (--ops-rejeitada),
+   * em vez de introduzir um vermelho novo.
+   */
+  --confirmar: oklch(0.581 0.125 163.2);        /* #009165 verde de confirmação */
+  --confirmar-foreground: oklch(1 0 0);
+  --recusar: oklch(0.505 0.190 27.5);           /* #B91C1C, mesmo valor de --ops-rejeitada */
+  --recusar-foreground: oklch(1 0 0);
   --border: oklch(0.90 0.008 250);
   --input: oklch(0.90 0.008 250);
   --ring: oklch(0.62 0.10 215);
@@ -205,8 +221,6 @@
   .ops-card { background: var(--ops-surface); border-color: var(--ops-border) !important; }
   .ops-border { border-color: var(--ops-border) !important; }
   .ops-muted { color: var(--ops-text-muted) !important; }
-  .ops-btn-primary { background: var(--ops-accent) !important; color: #fff !important; }
-  .ops-btn-primary:hover { background: var(--ops-accent-ink) !important; }
   .ops-pill-active { background: var(--ops-accent) !important; color: #fff !important; border-color: var(--ops-accent) !important; }
   .ops-pill { background: var(--ops-surface); color: var(--ops-text-muted); border-color: var(--ops-border) !important; }
 

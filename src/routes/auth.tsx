@@ -66,8 +66,14 @@ function AuthPage() {
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={cn("px-4 h-8 rounded-full text-[12px] transition-all")}
-              style={mode === m ? { background: "var(--vs-cyan)", color: "#04202B" } : { color: "var(--vs-text-muted)" }}
+              className={cn(
+                "px-4 h-8 rounded-full text-[12px] transition-all border border-transparent",
+                // Seletor de estado, não ação: mesmo navy que o app usa nos seus seletores.
+                // A borda clara é necessária só aqui: nesta tela o fundo também é escuro,
+                // e o navy sozinho não se destaca dele (1,19:1), sumindo como forma.
+                mode === m && "bg-primary text-primary-foreground border-white/45",
+              )}
+              style={mode === m ? undefined : { color: "var(--vs-text-muted)" }}
             >
               {m === "signin" ? "Entrar" : "Cadastrar"}
             </button>
@@ -90,7 +96,7 @@ function AuthPage() {
             <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" />
           </div>
           {error && <p className="text-[12px]" style={{ color: "#F87171" }}>{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full h-12 rounded-full mt-2" style={{ background: "var(--vs-cyan)", color: "#04202B" }}>
+          <Button type="submit" disabled={loading} variant="confirmar" className="w-full h-12 rounded-full mt-2">
             {loading ? "Aguarde…" : mode === "signin" ? "Entrar" : "Criar conta"}
           </Button>
         </form>

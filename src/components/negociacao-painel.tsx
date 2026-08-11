@@ -404,7 +404,7 @@ function FornecedorForm({
 
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancelar</Button>
-        <Button size="sm" disabled={!v.nome || !v.documento || submitting} onClick={tentarSubmeter} className="bg-primary text-primary-foreground">
+        <Button size="sm" disabled={!v.nome || !v.documento || submitting} onClick={tentarSubmeter} variant="confirmar">
           {submitLabel}
         </Button>
       </div>
@@ -502,7 +502,7 @@ function NegociacaoCard({
               size="sm"
               disabled={!justificativa || escolherMut.isPending}
               onClick={() => escolherMut.mutate()}
-              className="bg-primary text-primary-foreground"
+              variant="confirmar"
             >
               Confirmar escolha
             </Button>
@@ -516,7 +516,7 @@ function NegociacaoCard({
             </Button>
           )}
           {podeEditar && (
-            <Button size="sm" className="h-8 bg-primary text-primary-foreground" onClick={() => setEscolhendo(true)}>
+            <Button size="sm" className="h-8" variant="confirmar" onClick={() => setEscolhendo(true)}>
               <Trophy className="size-3.5 mr-1" /> Escolher esta empresa
             </Button>
           )}
@@ -570,7 +570,7 @@ export function PainelNegociacao({
             onSubmit={(dados) => criarMut.mutate(dados)}
           />
         ) : (
-          <Button onClick={() => setCriando(true)} className="h-9 px-4 text-sm bg-primary text-primary-foreground">
+          <Button onClick={() => setCriando(true)} className="h-9 px-4 text-sm" variant="confirmar">
             <Plus className="size-4 mr-1" /> Cadastrar empresa participante
           </Button>
         )

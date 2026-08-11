@@ -318,15 +318,15 @@ function JuridicoPage() {
           <>
             <div className="flex gap-2 pt-1">
               <Button
-                variant="outline"
-                className="flex-1 text-destructive border-destructive/30"
+                variant="recusarOutline"
+                className="flex-1"
                 disabled={decidirMut.isPending}
                 onClick={() => setModoRessalva(true)}
               >
                 <MessageSquareWarning className="size-4 mr-1.5" /> Pedir ajuste
               </Button>
               <Button
-                className="flex-1 bg-primary text-primary-foreground"
+                className="flex-1" variant="confirmar"
                 disabled={decidirMut.isPending}
                 onClick={() => decidirMut.mutate({ acao: "aprovar" })}
               >
@@ -362,7 +362,7 @@ function JuridicoPage() {
                 Voltar
               </Button>
               <Button
-                className="flex-1 bg-destructive text-white"
+                className="flex-1" variant="recusar"
                 disabled={decidirMut.isPending || ressalva.trim().length < 5}
                 onClick={() => decidirMut.mutate({ acao: "rejeitar", ressalva })}
               >

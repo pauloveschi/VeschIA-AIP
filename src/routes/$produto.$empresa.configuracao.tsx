@@ -326,7 +326,7 @@ function NovaEtapaForm({ empresaId, produto, papeis, proximaOrdem }: { empresaId
 
   if (!open) {
     return (
-      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm bg-primary text-primary-foreground">
+      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm" variant="confirmar">
         <Plus className="size-4 mr-1" /> Nova etapa
       </Button>
     );
@@ -359,7 +359,7 @@ function NovaEtapaForm({ empresaId, produto, papeis, proximaOrdem }: { empresaId
       </label>
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-        <Button size="sm" disabled={!nomeEtapa || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
+        <Button size="sm" disabled={!nomeEtapa || createMut.isPending} onClick={() => createMut.mutate()} variant="confirmar">
           Criar etapa
         </Button>
       </div>

@@ -332,16 +332,16 @@ function AprovacaoPage() {
 
         <div className="flex gap-2 pt-1">
           <Button
-            variant={acaoDestacada === "rejeitar" ? "default" : "outline"}
-            className={acaoDestacada === "rejeitar" ? "flex-1 bg-destructive text-white" : "flex-1 text-destructive border-destructive/30"}
+            variant={acaoDestacada === "rejeitar" ? "recusar" : "recusarOutline"}
+            className="flex-1"
             disabled={decidirMut.isPending}
             onClick={() => decidirMut.mutate("rejeitada")}
           >
             <X className="size-4 mr-1.5" /> Rejeitar
           </Button>
           <Button
-            variant={acaoDestacada === "aprovar" ? "default" : "outline"}
-            className={acaoDestacada === "aprovar" ? "flex-1 bg-primary text-primary-foreground" : "flex-1"}
+            variant={acaoDestacada === "aprovar" ? "confirmar" : "confirmarOutline"}
+            className="flex-1"
             disabled={decidirMut.isPending}
             onClick={() => decidirMut.mutate("aprovada")}
           >

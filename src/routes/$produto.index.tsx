@@ -139,8 +139,7 @@ function ProdutoSalesPage() {
             href={`https://wa.me/${WHATSAPP_VENDAS}?text=${encodeURIComponent(mensagem)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-11 px-6 rounded-full text-sm font-medium flex items-center"
-            style={{ background: "var(--vs-cyan)", color: "#04202B" }}
+            className="h-11 px-6 rounded-full text-sm font-medium flex items-center bg-confirmar text-confirmar-foreground"
           >
             Solicitar demonstração
           </a>

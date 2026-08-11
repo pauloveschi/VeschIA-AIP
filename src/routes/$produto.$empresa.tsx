@@ -61,7 +61,7 @@ function EmpresaLayout() {
           <p className="text-sm text-muted-foreground mt-2">
             Verifique o link, ou se ainda não tem acesso, faça login com sua conta.
           </p>
-          <Link to="/" className="inline-flex mt-4 h-11 px-6 rounded-full bg-primary text-primary-foreground items-center text-sm">
+          <Link to="/" className="inline-flex mt-4 h-11 px-6 rounded-full bg-confirmar text-confirmar-foreground items-center text-sm">
             Ir para o VeschIA AIP
           </Link>
         </div>

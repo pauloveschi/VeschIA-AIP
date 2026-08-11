@@ -127,7 +127,9 @@ function ContratoDetailPage() {
                       <div
                         className="size-8 rounded-full flex items-center justify-center text-[12px] font-semibold"
                         style={{
-                          background: isDone ? "#15803D" : isCurrent ? "var(--accent)" : "var(--secondary)",
+                          // Ciano escuro (--ops-accent-ink), não o ciano da marca: o texto
+                          // branco por cima só fica legível nesse tom (8,7:1 contra 2,8:1).
+                          background: isDone ? "#15803D" : isCurrent ? "var(--ops-accent-ink)" : "var(--secondary)",
                           color: isDone || isCurrent ? "#fff" : "var(--muted-foreground)",
                         }}
                       >

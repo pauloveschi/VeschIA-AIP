@@ -341,7 +341,7 @@ function SolicitacaoDetailPage() {
                       params={{ produto, empresa: empresaSlug, id }}
                       className="shrink-0"
                     >
-                      <Button size="sm" className="h-8 bg-primary text-primary-foreground">
+                      <Button size="sm" className="h-8" variant="confirmar">
                         Gerenciar negociação <ArrowUpRight className="size-3.5 ml-1" />
                       </Button>
                     </Link>
@@ -352,7 +352,7 @@ function SolicitacaoDetailPage() {
                       params={{ produto, empresa: empresaSlug, id }}
                       className="shrink-0"
                     >
-                      <Button size="sm" className="h-8 bg-primary text-primary-foreground">
+                      <Button size="sm" className="h-8" variant="confirmar">
                         Elaborar contrato <ArrowUpRight className="size-3.5 ml-1" />
                       </Button>
                     </Link>
@@ -375,8 +375,8 @@ function SolicitacaoDetailPage() {
                     <div className="flex gap-2 shrink-0">
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="h-8 text-destructive border-destructive/30"
+                        variant="recusarOutline"
+                        className="h-8"
                         disabled={etapaAnteriorPendente}
                         onClick={() => decidir.mutate({ etapaId: etapa.id, status: "rejeitada" })}
                       >
@@ -384,7 +384,7 @@ function SolicitacaoDetailPage() {
                       </Button>
                       <Button
                         size="sm"
-                        className="h-8 bg-primary text-primary-foreground"
+                        className="h-8" variant="confirmar"
                         disabled={etapaAnteriorPendente}
                         onClick={() => decidir.mutate({ etapaId: etapa.id, status: "aprovada" })}
                       >

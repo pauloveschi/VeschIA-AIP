@@ -361,7 +361,7 @@ function NovaEmpresaForm() {
         )}
       </div>
       {createMut.isError && <p className="text-xs text-destructive">{(createMut.error as Error).message}</p>}
-      <Button disabled={!dados.nome || !slug || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
+      <Button disabled={!dados.nome || !slug || createMut.isPending} onClick={() => createMut.mutate()} variant="confirmar">
         Criar empresa
       </Button>
     </div>
@@ -404,7 +404,7 @@ function EditarEmpresaForm({ empresa, onDone }: { empresa: EmpresaRow; onDone: (
       {salvarMut.isError && <p className="text-xs text-destructive">{(salvarMut.error as Error).message}</p>}
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={onDone}>Cancelar</Button>
-        <Button size="sm" disabled={salvarMut.isPending} onClick={() => salvarMut.mutate()} className="bg-primary text-primary-foreground">
+        <Button size="sm" disabled={salvarMut.isPending} onClick={() => salvarMut.mutate()} variant="confirmar">
           Salvar
         </Button>
       </div>
@@ -528,7 +528,7 @@ function SuperAdminPage() {
           <Link
             to="/auth"
             search={{ redirect: "/superadmin", mode: "signin" }}
-            className="inline-flex h-11 px-6 rounded-full bg-primary text-primary-foreground items-center text-sm"
+            className="inline-flex h-11 px-6 rounded-full bg-confirmar text-confirmar-foreground items-center text-sm"
           >
             Entrar
           </Link>

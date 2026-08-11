@@ -107,7 +107,7 @@ function ContratoPage() {
         </p>
 
         <Button
-          className="h-9 px-4 text-sm bg-primary text-primary-foreground"
+          className="h-9 px-4 text-sm" variant="confirmar"
           disabled={gerarMut.isPending}
           onClick={() => gerarMut.mutate()}
         >

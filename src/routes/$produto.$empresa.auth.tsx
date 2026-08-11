@@ -97,7 +97,7 @@ function AuthPage() {
             <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" />
           </div>
           {error && <p className="text-[12px] text-destructive">{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full h-12 rounded-full bg-primary mt-2">
+          <Button type="submit" disabled={loading} className="w-full h-12 rounded-full mt-2" variant="confirmar">
             {loading ? "Aguarde…" : mode === "signin" ? "Entrar" : "Criar conta"}
           </Button>
         </form>

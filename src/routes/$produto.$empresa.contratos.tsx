@@ -90,7 +90,7 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
 
   if (!open) {
     return (
-      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm bg-primary text-primary-foreground">
+      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm" variant="confirmar">
         <Plus className="size-4 mr-1" /> Novo contrato
       </Button>
     );
@@ -104,7 +104,7 @@ function NovoContratoForm({ empresaId, fases, onCreated }: { empresaId: string; 
       <CurrencyInput valueReais={valor} onChangeReais={setValor} className="h-9" />
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-        <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
+        <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} variant="confirmar">
           Criar
         </Button>
       </div>

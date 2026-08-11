@@ -113,7 +113,7 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
 
   if (!open) {
     return (
-      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm bg-primary text-primary-foreground">
+      <Button onClick={() => setOpen(true)} className="h-9 px-4 text-sm" variant="confirmar">
         <Plus className="size-4 mr-1" /> Nova solicitação
       </Button>
     );
@@ -130,7 +130,7 @@ function NewSolicitacaoForm({ empresaId, produto, onCreated }: { empresaId: stri
       </div>
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-        <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} className="bg-primary text-primary-foreground">
+        <Button size="sm" disabled={!titulo || createMut.isPending} onClick={() => createMut.mutate()} variant="confirmar">
           Criar
         </Button>
       </div>
@@ -161,7 +161,7 @@ function DashboardPage() {
             to="/$produto/$empresa/auth"
             params={{ produto, empresa: empresa.slug }}
             search={{ redirect: `/${produto}/${empresa.slug}`, mode: "signin" }}
-            className="inline-flex mt-4 h-11 px-6 rounded-full bg-primary text-primary-foreground items-center text-sm"
+            className="inline-flex mt-4 h-11 px-6 rounded-full bg-confirmar text-confirmar-foreground items-center text-sm"
           >
             Entrar
           </Link>
