@@ -142,14 +142,8 @@ function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug
       </nav>
 
       <div className="px-2 py-3 border-t border-white/10 space-y-0.5">
-        <a
-          href="mailto:veschipaulo@gmail.com"
-          className="flex flex-col gap-0.5 rounded-lg px-3 py-2 text-[13.5px] text-primary-foreground/70 transition-colors hover:bg-white/5 hover:text-primary-foreground"
-        >
-          <span className="flex items-center gap-2.5">
-            <Mail className="size-4 shrink-0" /> Suporte
-          </span>
-          <span className="pl-[26px] text-[11px] text-primary-foreground/50">veschipaulo@gmail.com</span>
+        <a href="mailto:veschipaulo@gmail.com" className={navItemClass}>
+          <Mail className="size-4 shrink-0" /> Suporte
         </a>
         <button
           onClick={async () => {
