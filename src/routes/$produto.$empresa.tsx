@@ -99,14 +99,22 @@ function EmpresaLayout() {
 }
 
 const navItemClass = cn(
-  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-primary-foreground/70 transition-colors",
+  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] font-medium text-primary-foreground/90 transition-colors",
   "hover:bg-white/5 hover:text-primary-foreground",
-  "[&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-primary-foreground",
+  "[&.active]:bg-white/10 [&.active]:text-primary-foreground",
 );
 
-/** Item de submenu: rótulo à esquerda, contador à direita. */
+/**
+ * Item de submenu: rótulo à esquerda, contador à direita.
+ *
+ * A hierarquia entre pai e filho é feita só por peso e tamanho, sem faixa de fundo nem
+ * filete: fundo mais claro no menu escuro significaria "mais importante", invertendo a
+ * leitura, e ainda brigaria com o estado ativo, que já é um fundo claro. O afastamento
+ * precisa ser grande pra funcionar — na primeira versão era 13,5 contra 12,5 px e 70
+ * contra 60 de opacidade, diferença pequena demais pra ler como nível diferente.
+ */
 const subItemClass = cn(
-  "flex items-center justify-between gap-2 rounded-lg pl-9 pr-3 py-1.5 text-[12.5px] text-primary-foreground/60 transition-colors",
+  "flex items-center justify-between gap-2 rounded-lg pl-9 pr-3 py-1.5 text-[12px] font-normal text-primary-foreground/50 transition-colors",
   "hover:bg-white/5 hover:text-primary-foreground",
   "[&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-primary-foreground",
 );
@@ -215,7 +223,7 @@ function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug
               onClick={onNavigate}
             >
               <span>Todas</span>
-              <span className="tabular-nums text-primary-foreground/50">{contadores.totalSolicitacoes}</span>
+              <span className="tabular-nums text-primary-foreground/35">{contadores.totalSolicitacoes}</span>
             </Link>
             {STATUS_SOLICITACAO.map((s) => (
               <Link
@@ -228,7 +236,7 @@ function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug
                 onClick={onNavigate}
               >
                 <span>{statusSolicitacaoMeta[s].label}</span>
-                <span className="tabular-nums text-primary-foreground/50">{contadores.solicitacoes?.[s] ?? 0}</span>
+                <span className="tabular-nums text-primary-foreground/35">{contadores.solicitacoes?.[s] ?? 0}</span>
               </Link>
             ))}
           </div>
@@ -251,7 +259,7 @@ function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug
               onClick={onNavigate}
             >
               <span>Todos</span>
-              <span className="tabular-nums text-primary-foreground/50">{contadores.totalContratos}</span>
+              <span className="tabular-nums text-primary-foreground/35">{contadores.totalContratos}</span>
             </Link>
             {STATUS_CONTRATO.map((s) => (
               <Link
@@ -264,7 +272,7 @@ function SidebarContent({ produto, empresa, onNavigate }: { produto: ProdutoSlug
                 onClick={onNavigate}
               >
                 <span>{statusContratoMeta[s].label}</span>
-                <span className="tabular-nums text-primary-foreground/50">{contadores.contratos?.[s] ?? 0}</span>
+                <span className="tabular-nums text-primary-foreground/35">{contadores.contratos?.[s] ?? 0}</span>
               </Link>
             ))}
           </div>
